@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #fff; color: #1A1A1A; padding: 16px; width: 296px; }
+
+    h1 { font-size: 16px; font-weight: 700; margin-bottom: 2px; letter-spacing: -0.3px; }
+    .sub { font-size: 11px; color: #888; margin-bottom: 14px; }
+
+    .type-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; margin-bottom: 10px; }
+    .type-brief { background: #F0FFF4; color: #276749; }
+    .type-competitors { background: #EBF4FF; color: #1A56A4; }
+
+    .preview { background: #FAFAFA; border: 1px solid #E5E5E5; border-radius: 8px; padding: 12px; margin-bottom: 14px; min-height: 60px; max-height: 220px; overflow-y: auto; display: none; }
+    .preview.visible { display: block; }
+    .group { margin-bottom: 10px; }
+    .group-title { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .field { margin-bottom: 3px; }
+    .field-label { font-size: 10px; color: #999; }
+    .field-value { font-size: 11px; color: #1A1A1A; line-height: 1.4; }
+    .field-empty { font-size: 11px; color: #DDD; font-style: italic; }
+    .project-name { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #E5E5E5; }
+    .competitor-tab { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #1A1A1A; color: #fff; font-size: 10px; font-weight: 600; margin-bottom: 8px; margin-right: 4px; }
+    .conclusion-block { background: #FFFBEB; border: 1px solid #FBD38D; border-radius: 6px; padding: 8px; margin-top: 8px; }
+    .conclusion-title { font-size: 10px; font-weight: 700; color: #744210; margin-bottom: 4px; }
+
+    .btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; transition: opacity 0.1s; }
+    .btn:active { opacity: 0.8; }
+    .btn-primary { background: #1A1A1A; color: #fff; }
+    .btn-secondary { background: #F5F5F5; color: #1A1A1A; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .status { font-size: 11px; text-align: center; color: #888; margin-top: 4px; min-height: 16px; }
+    .status.error { color: #E53E3E; }
+    .status.success { color: #22C55E; }
+    .hint { font-size: 11px; color: #AAA; line-height: 1.5; text-align: center; padding: 12px 0; }
+  </style>
+</head>
+<body>
+  <h1>FLOW Importer</h1>
+  <p class="sub">Clipboard bridge — імпорт з FLOW застосунку</p>
+
+  <div id="preview" class="preview"></div>
+  <div id="hint" class="hint">Скопіюй бриф або аналіз конкурентів<br>у FLOW застосунку, потім натисни Paste</div>
+
+  <button class="btn btn-secondary" id="pasteBtn" onclick="paste()">📋 Paste from FLOW</button>
+  <button class="btn btn-primary" id="importBtn" onclick="importToFigma()" disabled>✦ Create in Figma</button>
+  <div class="status" id="status"></div>
+
+  <script>
+    let parsedData = null;
+
+    async function paste() {
+      const statusEl = document.getElementById('status');
+      try {
+        const text   = await navigator.clipboard.readText();
+        const parsed = JSON.parse(text);
+        if (parsed.type !== 'flow_brief' && parsed.type !== 'flow_competitors') {
+          throw new Error('not_flow');
+        }
+        parsedData = parsed;
+        renderPreview(parsed);
+        document.getElementById('importBtn').disabled = false;
+        document.getElementById('hint').style.display = 'none';
+        const label = parsed.type === 'flow_brief' ? '📋 Бриф' : '🔍 Аналіз конкурентів';
+        statusEl.textContent = `✓ ${label}: ${parsed.projectName}`;
+        statusEl.className = 'status success';
+      } catch (e) {
+        statusEl.textContent = e.message === 'not_flow'
+          ? '⚠ Буфер не містить FLOW дані'
+          : '⚠ Немає даних або некоректний формат';
+        statusEl.className = 'status error';
+      }
+    }
+
+    function renderPreview(data) {
+      const el = document.getElementById('preview');
+      let html = `<div class="project-name">📁 ${data.projectName}</div>`;
+
+      if (data.type === 'flow_brief') {
+        const brief  = data.brief || {};
+        const GROUPS = [
+          { id: 'client',      title: 'Про клієнта', emoji: '👤', fields: [{ id:'who', label:'Клієнт' }, { id:'usp', label:'УТП' }, { id:'advantages', label:'Переваги' }, { id:'disadvantages', label:'Недоліки' }] },
+          { id: 'goal',        title: 'Мета',         emoji: '🎯', fields: [{ id:'keyAction', label:'Ключова дія' }, { id:'purpose', label:'Навіщо' }] },
+          { id: 'wishes',      title: 'Побажання',    emoji: '✨', fields: [{ id:'ui', label:'UI' }, { id:'structure', label:'Структура' }, { id:'limitations', label:'Обмеження' }] },
+          { id: 'competition', title: 'Конкуренція',  emoji: '🔍', fields: [{ id:'competitors', label:'Конкуренти' }] },
+          { id: 'additional',  title: 'Додатково',    emoji: '📎', fields: [{ id:'materials', label:'Матеріали' }, { id:'questions', label:'Питання' }] },
+        ];
+        html += `<span class="type-badge type-brief">📋 Бриф</span>`;
+        GROUPS.forEach(g => {
+          const gData = brief[g.id] || {};
+          html += `<div class="group"><div class="group-title">${g.emoji} ${g.title}</div>`;
+          g.fields.forEach(f => {
+            const val = gData[f.id]?.trim();
+            html += `<div class="field"><span class="field-label">${f.label}: </span>`;
+            html += val ? `<span class="field-value">${val.slice(0, 70)}${val.length > 70 ? '…' : ''}</span>` : `<span class="field-empty">—</span>`;
+            html += '</div>';
+          });
+          html += '</div>';
+        });
+
+      } else if (data.type === 'flow_competitors') {
+        const list = data.competitors || [];
+        html += `<span class="type-badge type-competitors">🔍 Конкуренти (${list.length})</span>`;
+        list.forEach((comp, idx) => {
+          html += `<div class="group">`;
+          html += `<div class="competitor-tab">${comp.name || `Конкурент ${idx+1}`}</div>`;
+          const c = comp.conclusion || {};
+          if (c.works_well)   html += `<div class="field"><span class="field-label">✅ Добре: </span><span class="field-value">${c.works_well.slice(0,60)}…</span></div>`;
+          if (c.works_poorly) html += `<div class="field"><span class="field-label">❌ Погано: </span><span class="field-value">${c.works_poorly.slice(0,60)}…</span></div>`;
+          if (c.to_remember)  html += `<div class="field"><span class="field-label">📌 Запам'ятати: </span><span class="field-value">${c.to_remember.slice(0,60)}…</span></div>`;
+          html += '</div>';
+        });
+      }
+
+      el.innerHTML = html;
+      el.classList.add('visible');
+    }
+
+    function importToFigma() {
+      if (!parsedData) return;
+      document.getElementById('status').textContent = '⏳ Створюємо в Figma...';
+      document.getElementById('status').className = 'status';
+      document.getElementById('importBtn').disabled = true;
+      const msgType = parsedData.type === 'flow_brief' ? 'CREATE_BRIEF' : 'CREATE_COMPETITORS';
+      parent.postMessage({ pluginMessage: { type: msgType, data: parsedData } }, '*');
+    }
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === 'DONE') {
+        document.getElementById('status').textContent = '✓ Створено в Figma!';
+        document.getElementById('status').className = 'status success';
+        document.getElementById('importBtn').disabled = false;
+      } else if (msg.type === 'ERROR') {
+        document.getElementById('status').textContent = '✗ ' + msg.message;
+        document.getElementById('status').className = 'status error';
+        document.getElementById('importBtn').disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
