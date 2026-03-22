@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Upload, FileText, Download, Plus, Check, User, Sparkles, FolderOpen, ArrowLeft, Trash2, Edit2, Star, ChevronRight } from 'lucide-react';
+import { Send, Upload, FileText, Download, Plus, Check, User, Sparkles, FolderOpen, ArrowLeft, Trash2, Edit2, Star, ChevronRight, LogOut } from 'lucide-react';
+import AuthPage from './AuthPage';
 
 const FONT_BODY    = "'Inter', system-ui, -apple-system, sans-serif";
 const FONT_DISPLAY = "'Instrument Serif', Georgia, serif";
@@ -357,8 +358,16 @@ const getInitialMessage = (modeId) => ({
   final:       'Final Concept! 🎯\n\nLet\'s describe the hero screen in detail. What is the core idea of the selected concept? I\'ll prepare a detailed description for Figma implementation.',
 }[modeId] || `Hi! Ready to help with "${modeId}".`);
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Auth gate wrapper ────────────────────────────────────────────────────────
 export default function FlowAgent() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('flow:session') || 'null'); } catch { return null; }
+  });
+  if (!currentUser) return <AuthPage onLogin={(user) => setCurrentUser(user)} />;
+  return <FlowApp currentUser={currentUser} onLogout={() => { localStorage.removeItem('flow:session'); setCurrentUser(null); }} />;
+}
+
+function FlowApp({ currentUser, onLogout }) {
   const [view, setView]                   = useState('projects');
   const [projects, setProjects]           = useState([]);
   const [loaded, setLoaded]               = useState(false);
@@ -391,13 +400,19 @@ export default function FlowAgent() {
   useEffect(() => {
     (async () => {
       const saved = await storage.get('flow:projects');
-      if (saved) setProjects(saved);
+      if (saved) setProjects(saved.filter(p => !p.userId || p.userId === currentUser.userId));
       setLoaded(true);
     })();
   }, []);
 
   useEffect(() => {
-    if (loaded) storage.set('flow:projects', projects);
+    if (!loaded) return;
+    // Merge: keep other users' projects + current user's projects
+    (async () => {
+      const all = await storage.get('flow:projects') || [];
+      const others = all.filter(p => p.userId && p.userId !== currentUser.userId);
+      storage.set('flow:projects', [...others, ...projects]);
+    })();
   }, [projects, loaded]);
 
   useEffect(() => {
@@ -416,6 +431,7 @@ export default function FlowAgent() {
     if (!newName.trim()) return;
     const proj = {
       id: Date.now().toString(),
+      userId: currentUser.userId,
       name: newName.trim(),
       createdAt: new Date().toISOString(),
       important: false,
@@ -636,10 +652,24 @@ export default function FlowAgent() {
               <h1 style={{ fontSize: '56px', fontWeight: '400', marginBottom: '8px', letterSpacing: '-1px', fontFamily: FONT_DISPLAY, fontStyle: 'italic' }}>FLOW</h1>
               <p style={{ fontSize: '15px', color: '#666', fontFamily: FONT_BODY }}>Your Design Flow Partner</p>
             </div>
-            <button onClick={() => setShowApiInput(true)}
-              style={{ marginTop: '12px', padding: '8px 16px', background: apiKey ? '#F0FFF4' : '#FFF8F0', border: apiKey ? '1px solid #9AE6B4' : '1px solid #FBD38D', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: apiKey ? '#276749' : '#744210', fontFamily: FONT_BODY }}>
-              {apiKey ? '🔑 API Key ✓' : '🔑 Add API Key'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+              <button onClick={() => setShowApiInput(true)}
+                style={{ padding: '8px 16px', background: apiKey ? '#F0FFF4' : '#FFF8F0', border: apiKey ? '1px solid #9AE6B4' : '1px solid #FBD38D', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: apiKey ? '#276749' : '#744210', fontFamily: FONT_BODY }}>
+                {apiKey ? '🔑 API Key ✓' : '🔑 Add API Key'}
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px 6px 8px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: currentUser.avatarColor || '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
+                  {currentUser.name?.charAt(0).toUpperCase()}
+                </div>
+                <div style={{ lineHeight: 1.2 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>{currentUser.name}</div>
+                  <div style={{ fontSize: '11px', color: '#999' }}>{currentUser.email}</div>
+                </div>
+                <button onClick={onLogout} title="Sign out" style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}>
+                  <LogOut size={14} />
+                </button>
+              </div>
+            </div>
           </div>
 
           <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '24px', fontFamily: FONT_BODY }}>Projects</h2>
