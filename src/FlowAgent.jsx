@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Upload, FileText, Download, Plus, Check, User, Sparkles, FolderOpen, ArrowLeft, Trash2, Edit2, Star, ChevronRight, LogOut } from 'lucide-react';
+import { Send, Upload, FileText, Download, Plus, Check, User, Sparkles, FolderOpen, ArrowLeft, Trash2, Edit2, Star, ChevronRight, LogOut, Archive, ArchiveRestore } from 'lucide-react';
 import AuthPage from './AuthPage';
 
 const FONT_BODY    = "'Inter', system-ui, -apple-system, sans-serif";
@@ -393,6 +393,7 @@ function FlowApp({ currentUser, onLogout }) {
   const [modeSyncing, setModeSyncing]     = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+  const [projectTab, setProjectTab]               = useState('active'); // 'active' | 'archive'
 
   const fileInputRef   = useRef(null);
   const messagesEndRef = useRef(null);
@@ -639,10 +640,20 @@ function FlowApp({ currentUser, onLogout }) {
 
   // ─── Projects view ────────────────────────────────────────────────────────
   if (view === 'projects') {
-    const sorted = [...projects].sort((a, b) => {
+    const archiveProject   = (id) => setProjects(ps => ps.map(p => p.id === id ? { ...p, archived: true }  : p));
+    const unarchiveProject = (id) => setProjects(ps => ps.map(p => p.id === id ? { ...p, archived: false } : p));
+
+    const filtered = projects.filter(p => projectTab === 'archive' ? p.archived : !p.archived);
+    const sorted = [...filtered].sort((a, b) => {
       if (a.important !== b.important) return a.important ? -1 : 1;
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
+
+    const tabBtn = (tab, label, count) => (
+      <button onClick={() => setProjectTab(tab)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: FONT_BODY, background: projectTab === tab ? '#1A1A1A' : 'transparent', color: projectTab === tab ? '#fff' : '#888' }}>
+        {label}{count > 0 ? ` (${count})` : ''}
+      </button>
+    );
 
     return (
       <div style={{ minHeight: '100vh', background: '#FAFAFA', color: '#1A1A1A', fontFamily: FONT_BODY }}>
@@ -658,9 +669,12 @@ function FlowApp({ currentUser, onLogout }) {
                 {apiKey ? '🔑 API Key ✓' : '🔑 Add API Key'}
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px 6px 8px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: currentUser.avatarColor || '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
-                  {currentUser.name?.charAt(0).toUpperCase()}
-                </div>
+                {currentUser.picture
+                  ? <img src={currentUser.picture} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  : <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: currentUser.avatarColor || '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
+                      {currentUser.name?.charAt(0).toUpperCase()}
+                    </div>
+                }
                 <div style={{ lineHeight: 1.2 }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>{currentUser.name}</div>
                   <div style={{ fontSize: '11px', color: '#999' }}>{currentUser.email}</div>
@@ -672,23 +686,43 @@ function FlowApp({ currentUser, onLogout }) {
             </div>
           </div>
 
-          <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '24px', fontFamily: FONT_BODY }}>Projects</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-            <div onClick={() => setShowNew(true)} style={{ padding: '48px 32px', background: '#fff', border: '2px dashed #E5E5E5', borderRadius: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '240px' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}><Plus size={28} /></div>
-              <div style={{ fontSize: '15px', fontWeight: '600' }}>New Project</div>
+          {/* ── Tabs ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', gap: '4px', background: '#F0F0F0', padding: '4px', borderRadius: '10px' }}>
+              {tabBtn('active', 'Active', projects.filter(p => !p.archived).length)}
+              {tabBtn('archive', 'Archive', projects.filter(p => p.archived).length)}
             </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+            {/* New project card — only on active tab */}
+            {projectTab === 'active' && (
+              <div onClick={() => setShowNew(true)} style={{ padding: '48px 32px', background: '#fff', border: '2px dashed #E5E5E5', borderRadius: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '240px' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}><Plus size={28} /></div>
+                <div style={{ fontSize: '15px', fontWeight: '600' }}>New Project</div>
+              </div>
+            )}
+
+            {/* Empty archive state */}
+            {projectTab === 'archive' && sorted.length === 0 && (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '80px 20px', color: '#BBB' }}>
+                <Archive size={40} style={{ marginBottom: '16px', opacity: 0.4 }} />
+                <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>Archive is empty</div>
+                <div style={{ fontSize: '13px' }}>Completed projects can be moved here</div>
+              </div>
+            )}
 
             {sorted.map(p => {
               const completedCount = (p.completedSteps || []).length;
               const isEditing = editingId === p.id;
               const isComplete = !!p.completedAt;
               return (
-                <div key={p.id} onClick={() => !isEditing && openProject(p)}
-                  style={{ padding: '28px', background: '#fff', border: p.important ? '2px solid #FFD700' : isComplete ? '2px solid #22C55E' : '1px solid #E5E5E5', borderRadius: '12px', cursor: isEditing ? 'default' : 'pointer', minHeight: '240px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                  {isComplete && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#22C55E', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: '#fff' }}>✅ Completed</div>}
-                  {p.important && !isComplete && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#FFD700', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>⭐ Priority</div>}
-                  <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: '#1A1A1A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}><FolderOpen size={22} color="#fff" /></div>
+                <div key={p.id} onClick={() => !isEditing && !p.archived && openProject(p)}
+                  style={{ padding: '28px', background: p.archived ? '#F9F9F9' : '#fff', border: p.important ? '2px solid #FFD700' : isComplete ? '2px solid #22C55E' : '1px solid #E5E5E5', borderRadius: '12px', cursor: isEditing || p.archived ? 'default' : 'pointer', minHeight: '220px', display: 'flex', flexDirection: 'column', position: 'relative', opacity: p.archived ? 0.85 : 1 }}>
+                  {isComplete && !p.archived && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#22C55E', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: '#fff' }}>✅ Completed</div>}
+                  {p.archived && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#E5E5E5', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}><Archive size={11} /> Archived</div>}
+                  {p.important && !isComplete && !p.archived && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#FFD700', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>⭐ Priority</div>}
+                  <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: p.archived ? '#DDD' : '#1A1A1A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}><FolderOpen size={22} color="#fff" /></div>
                   {isEditing ? (
                     <div style={{ marginBottom: '8px' }}>
                       <input autoFocus value={editName} onChange={e => setEditName(e.target.value)}
@@ -712,9 +746,18 @@ function FlowApp({ currentUser, onLogout }) {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid #E5E5E5' }}>
                     <div style={{ fontSize: '13px', color: '#666' }}>{isComplete ? 'Project complete 🎉' : `${completedCount}/9 steps`}</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={e => { e.stopPropagation(); setProjects(ps => ps.map(x => x.id === p.id ? { ...x, important: !x.important } : x)); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: p.important ? '#FFD700' : '#D4D4D4' }}><Star size={18} fill={p.important ? '#FFD700' : 'none'} strokeWidth={1} /></button>
-                      <button onClick={e => { e.stopPropagation(); setEditingId(p.id); setEditName(p.name); }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: '4px' }}><Edit2 size={18} strokeWidth={1} /></button>
-                      <button onClick={e => { e.stopPropagation(); setDeletingProject(p); }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: '4px' }}><Trash2 size={18} strokeWidth={1} /></button>
+                      {p.archived ? (
+                        <button onClick={e => { e.stopPropagation(); unarchiveProject(p.id); }} title="Restore from archive" style={{ background: 'none', border: 'none', color: '#6366F1', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: FONT_BODY }}>
+                          <ArchiveRestore size={15} /> Restore
+                        </button>
+                      ) : (
+                        <>
+                          <button onClick={e => { e.stopPropagation(); setProjects(ps => ps.map(x => x.id === p.id ? { ...x, important: !x.important } : x)); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: p.important ? '#FFD700' : '#D4D4D4' }}><Star size={18} fill={p.important ? '#FFD700' : 'none'} strokeWidth={1} /></button>
+                          <button onClick={e => { e.stopPropagation(); setEditingId(p.id); setEditName(p.name); }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: '4px' }}><Edit2 size={18} strokeWidth={1} /></button>
+                          {isComplete && <button onClick={e => { e.stopPropagation(); archiveProject(p.id); }} title="Move to archive" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '4px' }}><Archive size={18} strokeWidth={1} /></button>}
+                          <button onClick={e => { e.stopPropagation(); setDeletingProject(p); }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: '4px' }}><Trash2 size={18} strokeWidth={1} /></button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
