@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Upload, FileText, Download, Plus, Check, User, Sparkles, FolderOpen, ArrowLeft, Trash2, Edit2, Star, ChevronRight, LogOut, Archive, ArchiveRestore } from 'lucide-react';
+// Material Design Icons via Google Fonts (see index.html)
+const Icon = ({ n, s = 20, style, ...rest }) => (
+  <span className="material-icons" style={{ fontSize: s, lineHeight: 1, userSelect: 'none', display: 'inline-flex', alignItems: 'center', ...style }} {...rest}>{n}</span>
+);
 import AuthPage from './AuthPage';
 
 const FONT_BODY    = "'Inter', system-ui, -apple-system, sans-serif";
@@ -148,15 +151,15 @@ const modeStructures = {
 
 // ─── Modes ────────────────────────────────────────────────────────────────────
 const modes = [
-  { id: 'brief',       title: 'Brief & Kickoff',      icon: '📋', description: 'Client information gathering' },
-  { id: 'competitors', title: 'Competitor Analysis',  icon: '🔍', description: 'Design, UX, POD, POE, CX' },
-  { id: 'sitemap',     title: 'Site Map',              icon: '🗺️', description: 'Structure & architecture' },
-  { id: 'wireframes',  title: 'Wireframes',            icon: '📐', description: 'Screen structure' },
-  { id: 'emotions',    title: 'Emotions & Archetypes', icon: '🎭', description: 'Emotional tone' },
-  { id: 'moodboard',   title: 'Design Session',        icon: '🎨', description: 'Visual references' },
-  { id: 'concept',     title: 'Concept Search',        icon: '💡', description: 'Brainstorming' },
-  { id: 'strategy',    title: 'Design Strategy',       icon: '📊', description: '2 strategies' },
-  { id: 'final',       title: 'Final Concept',         icon: '🎯', description: 'Hero screen' },
+  { id: 'brief',       title: 'Brief & Kickoff',      icon: 'assignment',      description: 'Client information gathering' },
+  { id: 'competitors', title: 'Competitor Analysis',  icon: 'manage_search',   description: 'Design, UX, POD, POE, CX' },
+  { id: 'sitemap',     title: 'Site Map',              icon: 'account_tree',    description: 'Structure & architecture' },
+  { id: 'wireframes',  title: 'Wireframes',            icon: 'space_dashboard', description: 'Screen structure' },
+  { id: 'emotions',    title: 'Emotions & Archetypes', icon: 'psychology',      description: 'Emotional tone' },
+  { id: 'moodboard',   title: 'Design Session',        icon: 'palette',         description: 'Visual references' },
+  { id: 'concept',     title: 'Concept Search',        icon: 'lightbulb',       description: 'Brainstorming' },
+  { id: 'strategy',    title: 'Design Strategy',       icon: 'insights',        description: '2 strategies' },
+  { id: 'final',       title: 'Final Concept',         icon: 'gps_fixed',       description: 'Hero screen' },
 ];
 
 // ─── System prompts (in English — Claude will respond in English) ─────────────
@@ -680,7 +683,7 @@ function FlowApp({ currentUser, onLogout }) {
                   <div style={{ fontSize: '11px', color: '#999' }}>{currentUser.email}</div>
                 </div>
                 <button onClick={onLogout} title="Sign out" style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}>
-                  <LogOut size={14} />
+                  <Icon n="logout" s={18} />
                 </button>
               </div>
             </div>
@@ -698,7 +701,7 @@ function FlowApp({ currentUser, onLogout }) {
             {/* New project card — only on active tab */}
             {projectTab === 'active' && (
               <div onClick={() => setShowNew(true)} style={{ padding: '48px 32px', background: '#fff', border: '2px dashed #E5E5E5', borderRadius: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '240px' }}>
-                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}><Plus size={28} /></div>
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}><Icon n="add" s={28} style={{ color: '#666' }} /></div>
                 <div style={{ fontSize: '15px', fontWeight: '600' }}>New Project</div>
               </div>
             )}
@@ -706,7 +709,7 @@ function FlowApp({ currentUser, onLogout }) {
             {/* Empty archive state */}
             {projectTab === 'archive' && sorted.length === 0 && (
               <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '80px 20px', color: '#BBB' }}>
-                <Archive size={40} style={{ marginBottom: '16px', opacity: 0.4 }} />
+                <Icon n="archive" s={40} style={{ marginBottom: '16px', opacity: 0.4, color: '#999' }} />
                 <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>Archive is empty</div>
                 <div style={{ fontSize: '13px' }}>Completed projects can be moved here</div>
               </div>
@@ -720,9 +723,9 @@ function FlowApp({ currentUser, onLogout }) {
                 <div key={p.id} onClick={() => !isEditing && !p.archived && openProject(p)}
                   style={{ padding: '28px', background: p.archived ? '#F9F9F9' : '#fff', border: p.important ? '2px solid #FFD700' : isComplete ? '2px solid #22C55E' : '1px solid #E5E5E5', borderRadius: '12px', cursor: isEditing || p.archived ? 'default' : 'pointer', minHeight: '220px', display: 'flex', flexDirection: 'column', position: 'relative', opacity: p.archived ? 0.85 : 1 }}>
                   {isComplete && !p.archived && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#22C55E', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: '#fff' }}>✅ Completed</div>}
-                  {p.archived && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#E5E5E5', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}><Archive size={11} /> Archived</div>}
+                  {p.archived && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#E5E5E5', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}><Icon n="archive" s={14} /> Archived</div>}
                   {p.important && !isComplete && !p.archived && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#FFD700', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>⭐ Priority</div>}
-                  <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: p.archived ? '#DDD' : '#1A1A1A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}><FolderOpen size={22} color="#fff" /></div>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: p.archived ? '#DDD' : '#1A1A1A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}><Icon n="folder_open" s={22} style={{ color: '#fff' }} /></div>
                   {isEditing ? (
                     <div style={{ marginBottom: '8px' }}>
                       <input autoFocus value={editName} onChange={e => setEditName(e.target.value)}
@@ -748,14 +751,14 @@ function FlowApp({ currentUser, onLogout }) {
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {p.archived ? (
                         <button onClick={e => { e.stopPropagation(); unarchiveProject(p.id); }} title="Restore from archive" style={{ background: 'none', border: 'none', color: '#6366F1', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: FONT_BODY }}>
-                          <ArchiveRestore size={15} /> Restore
+                          <Icon n="unarchive" s={16} /> Restore
                         </button>
                       ) : (
                         <>
-                          <button onClick={e => { e.stopPropagation(); setProjects(ps => ps.map(x => x.id === p.id ? { ...x, important: !x.important } : x)); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: p.important ? '#FFD700' : '#D4D4D4' }}><Star size={18} fill={p.important ? '#FFD700' : 'none'} strokeWidth={1} /></button>
-                          <button onClick={e => { e.stopPropagation(); setEditingId(p.id); setEditName(p.name); }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: '4px' }}><Edit2 size={18} strokeWidth={1} /></button>
-                          {isComplete && <button onClick={e => { e.stopPropagation(); archiveProject(p.id); }} title="Move to archive" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '4px' }}><Archive size={18} strokeWidth={1} /></button>}
-                          <button onClick={e => { e.stopPropagation(); setDeletingProject(p); }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: '4px' }}><Trash2 size={18} strokeWidth={1} /></button>
+                          <button onClick={e => { e.stopPropagation(); setProjects(ps => ps.map(x => x.id === p.id ? { ...x, important: !x.important } : x)); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: p.important ? '#F59E0B' : '#CCC' }}><Icon n="star" s={20} /></button>
+                          <button onClick={e => { e.stopPropagation(); setEditingId(p.id); setEditName(p.name); }} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '4px' }}><Icon n="edit" s={20} /></button>
+                          {isComplete && <button onClick={e => { e.stopPropagation(); archiveProject(p.id); }} title="Move to archive" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '4px' }}><Icon n="archive" s={20} /></button>}
+                          <button onClick={e => { e.stopPropagation(); setDeletingProject(p); }} style={{ background: 'none', border: 'none', color: '#CCC', cursor: 'pointer', padding: '4px' }}><Icon n="delete" s={20} /></button>
                         </>
                       )}
                     </div>
@@ -792,7 +795,7 @@ function FlowApp({ currentUser, onLogout }) {
 
         {deletingProject && (
           <ModalWrap onClose={() => setDeletingProject(null)}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FEE', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}><Trash2 size={24} color="#E53E3E" /></div>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FEE', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}><Icon n="delete" s={24} style={{ color: '#E53E3E' }} /></div>
             <h2 style={{ fontSize: '22px', fontWeight: '600', marginBottom: '8px' }}>Delete project?</h2>
             <p style={{ fontSize: '15px', color: '#666', lineHeight: '1.6', marginBottom: '24px' }}>Are you sure you want to delete <strong>"{deletingProject.name}"</strong>? This action cannot be undone.</p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -836,7 +839,7 @@ function FlowApp({ currentUser, onLogout }) {
       {/* Header */}
       <div style={{ padding: '12px 24px', background: '#fff', borderBottom: '1px solid #E5E5E5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => setView('projects')} style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer' }}><ArrowLeft size={20} /></button>
+          <button onClick={() => setView('projects')} style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#444' }}><Icon n="arrow_back" s={22} /></button>
           <div>
             <h1 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '1px' }}>{currentProject?.name}</h1>
             <p style={{ fontSize: '11px', color: '#888' }}>FLOW · {(currentProject?.completedSteps || []).length}/9 steps</p>
@@ -844,7 +847,7 @@ function FlowApp({ currentUser, onLogout }) {
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button onClick={() => setShowApiInput(true)} style={{ padding: '7px 12px', background: apiKey ? '#F0FFF4' : '#FFF8F0', border: apiKey ? '1px solid #9AE6B4' : '1px solid #FBD38D', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: apiKey ? '#276749' : '#744210' }}>{apiKey ? '🔑 ✓' : '🔑 API'}</button>
-          <button onClick={exportProject} style={{ padding: '7px 14px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}><Download size={13} />Export</button>
+          <button onClick={exportProject} style={{ padding: '7px 14px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}><Icon n="download" s={16} />Export</button>
           {!currentProject?.completedAt && (
             <button onClick={() => setShowCompleteConfirm(true)}
               style={{ padding: '7px 14px', background: allDone ? '#22C55E' : '#F5F5F5', border: allDone ? 'none' : '1px solid #E5E5E5', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: allDone ? '#fff' : '#999', fontWeight: '600' }}>
@@ -861,7 +864,7 @@ function FlowApp({ currentUser, onLogout }) {
           <div style={{ padding: sidebarCollapsed ? '12px 0' : '12px 12px', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', borderBottom: '1px solid #E5E5E5', flexShrink: 0 }}>
             {!sidebarCollapsed && <span style={{ fontSize: '10px', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>Process Steps</span>}
             <button onClick={() => setSidebarCollapsed(c => !c)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999', display: 'flex', alignItems: 'center', borderRadius: '4px' }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d={sidebarCollapsed ? 'M5 2l5 5-5 5' : 'M9 2L4 7l5 5'} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <Icon n={sidebarCollapsed ? 'chevron_right' : 'chevron_left'} s={18} />
             </button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: sidebarCollapsed ? '8px 6px' : '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -873,7 +876,7 @@ function FlowApp({ currentUser, onLogout }) {
                 <div key={m.id} onClick={() => setCurrentMode(m.id)} title={sidebarCollapsed ? `${i + 1}. ${m.title}` : undefined}
                   style={{ padding: sidebarCollapsed ? '0' : '10px', background: active ? '#F5F5F5' : 'transparent', border: active ? '1px solid #1A1A1A' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '8px', position: 'relative' }}>
                   <div style={{ width: sidebarCollapsed ? '36px' : '22px', height: sidebarCollapsed ? '36px' : '22px', borderRadius: sidebarCollapsed ? '8px' : '4px', background: done ? '#22C55E' : active ? '#1A1A1A' : '#F0F0F0', color: done || active ? '#fff' : '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', flexShrink: 0 }}>
-                    {done ? <Check size={sidebarCollapsed ? 14 : 11} color="#fff" /> : (sidebarCollapsed ? <span style={{ fontSize: '13px' }}>{m.icon}</span> : i + 1)}
+                    {done ? <Icon n="check" s={sidebarCollapsed ? 18 : 14} style={{ color: '#fff' }} /> : (sidebarCollapsed ? <Icon n={m.icon} s={18} style={{ color: active ? '#fff' : '#888' }} /> : i + 1)}
                   </div>
                   {!sidebarCollapsed && (
                     <>
@@ -896,7 +899,7 @@ function FlowApp({ currentUser, onLogout }) {
           <div style={{ padding: '12px 24px', borderBottom: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '18px' }}>{currMode?.icon}</span>
+                <Icon n={currMode?.icon} s={20} style={{ color: '#444' }} />
                 <h2 style={{ fontSize: '16px', fontWeight: '600' }}>{currMode?.title}</h2>
                 <span style={{ fontSize: '11px', color: '#999', background: '#F5F5F5', padding: '2px 7px', borderRadius: '10px' }}>Step {modeIdx + 1}/9</span>
               </div>
@@ -905,12 +908,12 @@ function FlowApp({ currentUser, onLogout }) {
             <div style={{ display: 'flex', gap: '6px' }}>
               {!(currentProject?.completedSteps || []).includes(currentMode) && hasChat && (
                 <button onClick={markStepDone} style={{ padding: '6px 12px', background: '#F0FFF4', border: '1px solid #9AE6B4', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', color: '#276749', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Check size={11} />Step done
+                  <Icon n="check" s={14} />Step done
                 </button>
               )}
               {!isLastMode && (
                 <button onClick={goNextStep} style={{ padding: '6px 12px', background: '#1A1A1A', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', color: '#fff', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Next <ChevronRight size={11} />
+                  Next <Icon n="chevron_right" s={16} />
                 </button>
               )}
             </div>
@@ -920,14 +923,14 @@ function FlowApp({ currentUser, onLogout }) {
             {currMsgs.map((m, i) => (
               <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <div style={{ width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0, background: m.role === 'user' ? '#1A1A1A' : '#F5F5F5', border: m.role === 'user' ? 'none' : '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {m.role === 'user' ? <User size={14} color="#fff" /> : <Sparkles size={14} />}
+                  {m.role === 'user' ? <Icon n="person" s={18} style={{ color: '#fff' }} /> : <Icon n="auto_awesome" s={16} style={{ color: '#888' }} />}
                 </div>
                 <div style={{ flex: 1, background: m.role === 'user' ? '#F5F5F5' : '#FAFAFA', border: '1px solid #E5E5E5', borderRadius: '10px', padding: '12px 16px', whiteSpace: 'pre-wrap', lineHeight: '1.7', fontSize: '14px' }}>{m.content}</div>
               </div>
             ))}
             {loading && (
               <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#F5F5F5', border: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Sparkles size={14} /></div>
+                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#F5F5F5', border: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon n="auto_awesome" s={16} style={{ color: '#888' }} /></div>
                 <div style={{ background: '#FAFAFA', border: '1px solid #E5E5E5', borderRadius: '10px', padding: '12px 16px' }}>
                   <div style={{ display: 'flex', gap: '4px' }}>{[0,1,2].map(i => <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#1A1A1A', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: `${-0.32 + i * 0.16}s` }} />)}</div>
                 </div>
@@ -940,7 +943,7 @@ function FlowApp({ currentUser, onLogout }) {
             <div style={{ padding: '10px 24px', borderTop: '1px solid #E5E5E5', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {currFiles.map((f, i) => (
                 <div key={i} style={{ padding: '4px 10px', background: '#F5F5F5', border: '1px solid #E5E5E5', borderRadius: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <FileText size={11} />{f.name} <span style={{ color: '#888' }}>({f.size})</span>
+                  <Icon n="description" s={14} />{f.name} <span style={{ color: '#888' }}>({f.size})</span>
                   <button onClick={() => updateProject({ files: { ...currentProject.files, [currentMode]: currFiles.filter((_, idx) => idx !== i) } })} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>×</button>
                 </div>
               ))}
@@ -963,12 +966,12 @@ function FlowApp({ currentUser, onLogout }) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 8px' }}>
                 <button onClick={() => fileInputRef.current?.click()} title="Upload file or screenshot"
                   style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#F5F5F5', border: '1px solid #E5E5E5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
-                  <Upload size={13} />
+                  <Icon n="upload" s={18} />
                 </button>
                 <div style={{ fontSize: '10px', color: '#C0C0C0' }}>Shift+Enter — new line</div>
                 <button onClick={() => loading ? abortCtrl?.abort() : sendMessage()} disabled={!loading && !canSend}
                   style={{ width: '32px', height: '32px', borderRadius: '50%', background: loading ? '#E53E3E' : (canSend ? '#1A1A1A' : '#E0E0E0'), border: 'none', cursor: loading || canSend ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}>
-                  {loading ? <span style={{ width: '9px', height: '9px', background: '#fff', borderRadius: '2px', display: 'block' }} /> : <Send size={13} color="#fff" />}
+                  {loading ? <span style={{ width: '9px', height: '9px', background: '#fff', borderRadius: '2px', display: 'block' }} /> : <Icon n="send" s={18} style={{ color: '#fff' }} />}
                 </button>
               </div>
             </div>

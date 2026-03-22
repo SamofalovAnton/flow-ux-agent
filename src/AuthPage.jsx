@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+const Icon = ({ n, s = 18, style, ...rest }) => (
+  <span className="material-icons" style={{ fontSize: s, lineHeight: 1, userSelect: 'none', display: 'inline-flex', alignItems: 'center', ...style }} {...rest}>{n}</span>
+);
+
 const FONT_BODY    = "'Inter', system-ui, -apple-system, sans-serif";
 const FONT_DISPLAY = "'Instrument Serif', Georgia, serif";
 const AVATAR_COLORS = ['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EF4444','#14B8A6'];
@@ -146,12 +150,18 @@ export default function AuthPage({ onLogin }) {
         <div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>9-step design process</div>
           {[
-            ['📋','Brief & Kickoff'],['🔍','Competitor Analysis'],['🗺️','Site Map'],
-            ['📐','Wireframes'],['🎭','Emotions & Archetypes'],['🎨','Design Session'],
-            ['💡','Concept Search'],['📊','Design Strategy'],['🎯','Final Concept'],
+            ['assignment',      'Brief & Kickoff'],
+            ['manage_search',   'Competitor Analysis'],
+            ['account_tree',    'Site Map'],
+            ['space_dashboard', 'Wireframes'],
+            ['psychology',      'Emotions & Archetypes'],
+            ['palette',         'Design Session'],
+            ['lightbulb',       'Concept Search'],
+            ['insights',        'Design Strategy'],
+            ['gps_fixed',       'Final Concept'],
           ].map(([icon, label], i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '9px', opacity: 0.6 }}>
-              <span style={{ fontSize: '13px' }}>{icon}</span>
+              <Icon n={icon} s={16} style={{ color: 'rgba(255,255,255,0.8)' }} />
               <span style={{ fontSize: '12px', color: '#fff' }}>{label}</span>
             </div>
           ))}
