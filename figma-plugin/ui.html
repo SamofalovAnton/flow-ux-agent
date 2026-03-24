@@ -35,90 +35,145 @@
     .status { font-size: 11px; text-align: center; color: #888; margin-top: 4px; min-height: 16px; }
     .status.error { color: #E53E3E; }
     .status.success { color: #22C55E; }
+
     .hint { font-size: 11px; color: #AAA; line-height: 1.5; text-align: center; padding: 12px 0; }
+
     .paste-area { width: 100%; height: 72px; border: 1.5px dashed #DDD; border-radius: 8px; padding: 8px; font-size: 11px; color: #1A1A1A; resize: none; outline: none; margin-bottom: 8px; background: #FAFAFA; }
     .paste-area:focus { border-color: #1A1A1A; background: #fff; }
+
+    .auto-badge { display: flex; align-items: center; gap: 6px; background: #F0FFF4; border: 1px solid #9AE6B4; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #276749; font-weight: 600; }
+    .scanning { display: flex; align-items: center; gap: 6px; background: #EBF4FF; border: 1px solid #BEE3F8; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #1A56A4; font-weight: 600; }
   </style>
 </head>
 <body>
-  <h1>FLOW Importer</h1>
-  <p class="sub">Clipboard bridge — імпорт з FLOW застосунку</p>
+  <h1>Brief Importer</h1>
+  <p class="sub">Auto-import з FLOW застосунку</p>
+
+  <div id="scanning" class="scanning" style="display:none;">⏳ Зчитую дані з буфера...</div>
+  <div id="autoBadge" class="auto-badge" style="display:none;">✓ Дані знайдено автоматично!</div>
 
   <div id="preview" class="preview"></div>
-  <div id="hint" class="hint">Скопіюй бриф або аналіз конкурентів<br>у FLOW застосунку, потім встав сюди (⌘V)</div>
+  <div id="hint" class="hint">Натисни <strong>⚡ Sync</strong> у FLOW,<br>потім відкрий цей плагін — дані підтягнуться автоматично</div>
 
-  <textarea id="pasteArea" class="paste-area" placeholder="Встав JSON сюди (⌘V / Ctrl+V)…"></textarea>
-  <button class="btn btn-secondary" id="pasteBtn" onclick="paste()">📋 Зчитати дані</button>
+  <div id="manualSection" style="display:none;">
+    <textarea id="pasteArea" class="paste-area" placeholder="Або встав JSON сюди вручну (⌘V)…"></textarea>
+    <button class="btn btn-secondary" id="pasteBtn" onclick="parseManual()">📋 Зчитати вручну</button>
+  </div>
+
   <button class="btn btn-primary" id="importBtn" onclick="importToFigma()" disabled>✦ Create in Figma</button>
+  <button class="btn btn-secondary" id="manualBtn" onclick="toggleManual()" style="font-size:11px; padding:7px; margin-bottom:4px;">вставити вручну</button>
   <div class="status" id="status"></div>
 
   <script>
     let parsedData = null;
 
-    function paste() {
+    // ─── Auto-read clipboard on open ─────────────────────────────────────────
+    window.addEventListener('load', () => {
+      autoReadClipboard();
+    });
+
+    async function autoReadClipboard() {
+      const scanEl = document.getElementById('scanning');
+      scanEl.style.display = 'flex';
+      try {
+        const text = await navigator.clipboard.readText();
+        scanEl.style.display = 'none';
+        if (!text || !text.trim()) { showHint(); return; }
+        const parsed = JSON.parse(text.trim());
+        if (parsed.type !== 'flow_brief' && parsed.type !== 'flow_competitors') { showHint(); return; }
+
+        // Got valid FLOW data!
+        parsedData = parsed;
+        renderPreview(parsed);
+        document.getElementById('importBtn').disabled = false;
+        document.getElementById('hint').style.display = 'none';
+        document.getElementById('autoBadge').style.display = 'flex';
+        const label = parsed.type === 'flow_brief' ? '📋 Бриф' : '🔍 Конкуренти';
+        setStatus('\u2713 ' + label + ': ' + parsed.projectName, 'success');
+
+        // Auto-import after short delay
+        setTimeout(() => importToFigma(), 800);
+
+      } catch (e) {
+        scanEl.style.display = 'none';
+        // clipboard read might fail due to permissions — show manual fallback
+        showHint();
+      }
+    }
+
+    function showHint() {
+      document.getElementById('hint').style.display = 'block';
+    }
+
+    function toggleManual() {
+      const ms = document.getElementById('manualSection');
+      ms.style.display = ms.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function parseManual() {
       const statusEl = document.getElementById('status');
       try {
-        const text   = document.getElementById('pasteArea').value.trim();
-        if (!text) throw new Error('empty');
+        const text = document.getElementById('pasteArea').value.trim();
+        if (!text) { setStatus('⚠ Встав JSON у поле вище', 'error'); return; }
         const parsed = JSON.parse(text);
         if (parsed.type !== 'flow_brief' && parsed.type !== 'flow_competitors') {
-          throw new Error('not_flow');
+          setStatus('⚠ Не є FLOW даними', 'error'); return;
         }
         parsedData = parsed;
         renderPreview(parsed);
         document.getElementById('importBtn').disabled = false;
         document.getElementById('hint').style.display = 'none';
-        document.getElementById('pasteArea').style.display = 'none';
-        document.getElementById('pasteBtn').style.display = 'none';
-        const label = parsed.type === 'flow_brief' ? '📋 Бриф' : '🔍 Аналіз конкурентів';
-        statusEl.textContent = '\u2713 ' + label + ': ' + parsed.projectName;
-        statusEl.className = 'status success';
+        document.getElementById('manualSection').style.display = 'none';
+        document.getElementById('manualBtn').style.display = 'none';
+        const label = parsed.type === 'flow_brief' ? '📋 Бриф' : '🔍 Конкуренти';
+        setStatus('\u2713 ' + label + ': ' + parsed.projectName, 'success');
       } catch (e) {
-        statusEl.textContent = e.message === 'not_flow'
-          ? '⚠ Буфер не містить FLOW дані'
-          : e.message === 'empty'
-          ? '⚠ Встав JSON у поле вище'
-          : '⚠ Некоректний формат JSON';
-        statusEl.className = 'status error';
+        setStatus('⚠ Некоректний JSON формат', 'error');
       }
+    }
+
+    function setStatus(msg, cls) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status' + (cls ? ' ' + cls : '');
     }
 
     function renderPreview(data) {
       const el = document.getElementById('preview');
-      let html = `<div class="project-name">📁 ${data.projectName}</div>`;
+      let html = '<div class="project-name">\uD83D\uDCC1 ' + data.projectName + '</div>';
 
       if (data.type === 'flow_brief') {
         const brief  = data.brief || {};
         const GROUPS = [
-          { id: 'client',      title: 'Про клієнта', emoji: '👤', fields: [{ id:'who', label:'Клієнт' }, { id:'usp', label:'УТП' }, { id:'advantages', label:'Переваги' }, { id:'disadvantages', label:'Недоліки' }] },
-          { id: 'goal',        title: 'Мета',         emoji: '🎯', fields: [{ id:'keyAction', label:'Ключова дія' }, { id:'purpose', label:'Навіщо' }] },
-          { id: 'wishes',      title: 'Побажання',    emoji: '✨', fields: [{ id:'ui', label:'UI' }, { id:'structure', label:'Структура' }, { id:'limitations', label:'Обмеження' }] },
-          { id: 'competition', title: 'Конкуренція',  emoji: '🔍', fields: [{ id:'competitors', label:'Конкуренти' }] },
-          { id: 'additional',  title: 'Додатково',    emoji: '📎', fields: [{ id:'materials', label:'Матеріали' }, { id:'questions', label:'Питання' }] },
+          { id: 'client',      title: 'Про клієнта', emoji: '\uD83D\uDC64', fields: [{ id:'who', label:'Клієнт' }, { id:'usp', label:'УТП' }, { id:'advantages', label:'Переваги' }, { id:'disadvantages', label:'Недоліки' }] },
+          { id: 'goal',        title: 'Мета',         emoji: '\uD83C\uDFAF', fields: [{ id:'keyAction', label:'Ключова дія' }, { id:'purpose', label:'Навіщо' }] },
+          { id: 'wishes',      title: 'Побажання',    emoji: '\u2728',       fields: [{ id:'ui', label:'UI' }, { id:'structure', label:'Структура' }, { id:'limitations', label:'Обмеження' }] },
+          { id: 'competition', title: 'Конкуренція',  emoji: '\uD83D\uDD0D', fields: [{ id:'competitors', label:'Конкуренти' }] },
+          { id: 'additional',  title: 'Додатково',    emoji: '\uD83D\uDCCE', fields: [{ id:'materials', label:'Матеріали' }, { id:'questions', label:'Питання' }] },
         ];
-        html += `<span class="type-badge type-brief">📋 Бриф</span>`;
-        GROUPS.forEach(g => {
-          const gData = brief[g.id] || {};
-          html += `<div class="group"><div class="group-title">${g.emoji} ${g.title}</div>`;
-          g.fields.forEach(f => {
-            const val = gData[f.id]?.trim();
-            html += `<div class="field"><span class="field-label">${f.label}: </span>`;
-            html += val ? `<span class="field-value">${val.slice(0, 70)}${val.length > 70 ? '…' : ''}</span>` : `<span class="field-empty">—</span>`;
+        html += '<span class="type-badge type-brief">\uD83D\uDCCB Бриф</span>';
+        GROUPS.forEach(function(g) {
+          var gData = brief[g.id] || {};
+          html += '<div class="group"><div class="group-title">' + g.emoji + ' ' + g.title + '</div>';
+          g.fields.forEach(function(f) {
+            var val = gData[f.id] ? gData[f.id].toString().trim() : '';
+            html += '<div class="field"><span class="field-label">' + f.label + ': </span>';
+            html += val ? '<span class="field-value">' + val.slice(0, 70) + (val.length > 70 ? '\u2026' : '') + '</span>' : '<span class="field-empty">\u2014</span>';
             html += '</div>';
           });
           html += '</div>';
         });
 
       } else if (data.type === 'flow_competitors') {
-        const list = data.competitors || [];
-        html += `<span class="type-badge type-competitors">🔍 Конкуренти (${list.length})</span>`;
-        list.forEach((comp, idx) => {
-          html += `<div class="group">`;
-          html += `<div class="competitor-tab">${comp.name || `Конкурент ${idx+1}`}</div>`;
-          const c = comp.conclusion || {};
-          if (c.works_well)   html += `<div class="field"><span class="field-label">✅ Добре: </span><span class="field-value">${c.works_well.slice(0,60)}…</span></div>`;
-          if (c.works_poorly) html += `<div class="field"><span class="field-label">❌ Погано: </span><span class="field-value">${c.works_poorly.slice(0,60)}…</span></div>`;
-          if (c.to_remember)  html += `<div class="field"><span class="field-label">📌 Запам'ятати: </span><span class="field-value">${c.to_remember.slice(0,60)}…</span></div>`;
+        var list = data.competitors || [];
+        html += '<span class="type-badge type-competitors">\uD83D\uDD0D Конкуренти (' + list.length + ')</span>';
+        list.forEach(function(comp, idx) {
+          html += '<div class="group">';
+          html += '<div class="competitor-tab">' + (comp.name || ('Конкурент ' + (idx+1))) + '</div>';
+          var c = comp.conclusion || {};
+          if (c.works_well)   html += '<div class="field"><span class="field-label">\u2705 Добре: </span><span class="field-value">' + c.works_well.slice(0,60) + '\u2026</span></div>';
+          if (c.works_poorly) html += '<div class="field"><span class="field-label">\u274C Погано: </span><span class="field-value">' + c.works_poorly.slice(0,60) + '\u2026</span></div>';
+          if (c.to_remember)  html += '<div class="field"><span class="field-label">\uD83D\uDCCC Запам\'ятати: </span><span class="field-value">' + c.to_remember.slice(0,60) + '\u2026</span></div>';
           html += '</div>';
         });
       }
@@ -129,23 +184,21 @@
 
     function importToFigma() {
       if (!parsedData) return;
-      document.getElementById('status').textContent = '⏳ Створюємо в Figma...';
-      document.getElementById('status').className = 'status';
+      setStatus('\u23F3 Створюємо в Figma...', '');
       document.getElementById('importBtn').disabled = true;
-      const msgType = parsedData.type === 'flow_brief' ? 'CREATE_BRIEF' : 'CREATE_COMPETITORS';
+      document.getElementById('autoBadge').style.display = 'none';
+      var msgType = parsedData.type === 'flow_brief' ? 'CREATE_BRIEF' : 'CREATE_COMPETITORS';
       parent.postMessage({ pluginMessage: { type: msgType, data: parsedData } }, '*');
     }
 
-    window.onmessage = (event) => {
-      const msg = event.data.pluginMessage;
+    window.onmessage = function(event) {
+      var msg = event.data.pluginMessage;
       if (!msg) return;
       if (msg.type === 'DONE') {
-        document.getElementById('status').textContent = '✓ Створено в Figma!';
-        document.getElementById('status').className = 'status success';
+        setStatus('\u2713 Створено в Figma!', 'success');
         document.getElementById('importBtn').disabled = false;
       } else if (msg.type === 'ERROR') {
-        document.getElementById('status').textContent = '✗ ' + msg.message;
-        document.getElementById('status').className = 'status error';
+        setStatus('\u2717 ' + msg.message, 'error');
         document.getElementById('importBtn').disabled = false;
       }
     };

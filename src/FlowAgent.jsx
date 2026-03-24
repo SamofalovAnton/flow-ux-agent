@@ -397,6 +397,7 @@ function FlowApp({ currentUser, onLogout }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [projectTab, setProjectTab]               = useState('active'); // 'active' | 'archive'
+  const [figmaModal, setFigmaModal]               = useState(null); // { projectName, type }
 
   const fileInputRef   = useRef(null);
   const messagesEndRef = useRef(null);
@@ -619,7 +620,7 @@ function FlowApp({ currentUser, onLogout }) {
       payload = JSON.stringify({ type: 'flow_mode', modeId: type, modeTitle: mode?.title, projectName: currentProject.name, data, groups: modeStructures[type]?.groups });
     }
     navigator.clipboard.writeText(payload)
-      .then(() => alert('✅ Copied! Open Figma → plugin "FLOW Importer" → "Paste from FLOW"'))
+      .then(() => setFigmaModal({ projectName: currentProject.name, type }))
       .catch(() => alert('⚠ Copy failed — please try again'));
   };
 
@@ -836,6 +837,37 @@ function FlowApp({ currentUser, onLogout }) {
 
   return (
     <div style={{ height: '100vh', background: '#FAFAFA', display: 'flex', flexDirection: 'column', fontFamily: FONT_BODY, color: '#1A1A1A' }}>
+
+      {/* Figma Export Modal */}
+      {figmaModal && (
+        <div onClick={() => setFigmaModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '16px', padding: '32px', width: '420px', fontFamily: FONT_BODY, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#1A1A1A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', fontSize: '22px' }}>✦</div>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px' }}>Дані скопійовано!</h2>
+            <p style={{ fontSize: '13px', color: '#666', marginBottom: '24px', lineHeight: '1.5' }}>
+              <strong>{figmaModal.projectName}</strong> готовий до імпорту.<br/>
+              Відкрий Figma і запусти плагін <strong>Brief Importer</strong> — він автоматично зчитає дані.
+            </p>
+            <div style={{ background: '#F5F5F5', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', fontSize: '12px', color: '#444', lineHeight: '1.8' }}>
+              <div>1. Відкрий <strong>Figma Desktop</strong></div>
+              <div>2. Плагіни → <strong>Brief Importer</strong> → Run</div>
+              <div>3. Плагін автоматично знайде дані ✓</div>
+              <div>4. Натисни <strong>Create in Figma</strong></div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <a href="figma://" target="_blank" rel="noreferrer"
+                style={{ flex: 1, padding: '11px', background: '#1A1A1A', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                ✦ Відкрити Figma
+              </a>
+              <button onClick={() => setFigmaModal(null)}
+                style={{ flex: 1, padding: '11px', background: '#fff', border: '1px solid #E5E5E5', color: '#1A1A1A', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                Закрити
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ padding: '12px 24px', background: '#fff', borderBottom: '1px solid #E5E5E5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
