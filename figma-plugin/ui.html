@@ -4,202 +4,240 @@
   <meta charset="utf-8" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #fff; color: #1A1A1A; padding: 16px; width: 296px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      background: #fff; color: #1A1A1A;
+      width: 280px; height: 420px;
+      display: flex; flex-direction: column;
+      user-select: none;
+    }
 
-    h1 { font-size: 16px; font-weight: 700; margin-bottom: 2px; letter-spacing: -0.3px; }
-    .sub { font-size: 11px; color: #888; margin-bottom: 14px; }
+    /* ── Header ── */
+    .header { padding: 14px 16px 10px; border-bottom: 1px solid #F0F0F0; }
+    .header h1 { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+    .header p  { font-size: 10px; color: #999; margin-top: 1px; }
 
-    .type-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; margin-bottom: 10px; }
-    .type-brief { background: #F0FFF4; color: #276749; }
-    .type-competitors { background: #EBF4FF; color: #1A56A4; }
+    /* ── Screens ── */
+    .screen { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px 16px; text-align: center; }
+    .screen.active { display: flex; }
 
-    .preview { background: #FAFAFA; border: 1px solid #E5E5E5; border-radius: 8px; padding: 12px; margin-bottom: 14px; min-height: 60px; max-height: 220px; overflow-y: auto; display: none; }
-    .preview.visible { display: block; }
-    .group { margin-bottom: 10px; }
-    .group-title { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .field { margin-bottom: 3px; }
-    .field-label { font-size: 10px; color: #999; }
-    .field-value { font-size: 11px; color: #1A1A1A; line-height: 1.4; }
-    .field-empty { font-size: 11px; color: #DDD; font-style: italic; }
-    .project-name { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #E5E5E5; }
-    .competitor-tab { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #1A1A1A; color: #fff; font-size: 10px; font-weight: 600; margin-bottom: 8px; margin-right: 4px; }
-    .conclusion-block { background: #FFFBEB; border: 1px solid #FBD38D; border-radius: 6px; padding: 8px; margin-top: 8px; }
-    .conclusion-title { font-size: 10px; font-weight: 700; color: #744210; margin-bottom: 4px; }
+    /* WAITING screen */
+    .paste-icon { font-size: 40px; margin-bottom: 16px; }
+    .paste-hint { font-size: 13px; font-weight: 600; color: #1A1A1A; margin-bottom: 6px; }
+    .paste-sub  { font-size: 11px; color: #999; line-height: 1.5; }
+    .kbd { display: inline-block; background: #F5F5F5; border: 1px solid #DDD; border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; color: #333; }
 
-    .btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; transition: opacity 0.1s; }
-    .btn:active { opacity: 0.8; }
-    .btn-primary { background: #1A1A1A; color: #fff; }
-    .btn-secondary { background: #F5F5F5; color: #1A1A1A; }
+    /* PREVIEW screen */
+    .preview-header { width: 100%; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .preview-badge { padding: 3px 10px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+    .badge-brief { background: #F0FFF4; color: #276749; }
+    .badge-comp  { background: #EBF4FF; color: #1A56A4; }
+    .preview-name { font-size: 12px; font-weight: 600; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .preview-body { width: 100%; flex: 1; overflow-y: auto; text-align: left; background: #FAFAFA; border: 1px solid #EBEBEB; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 11px; color: #444; line-height: 1.6; }
+    .field-row { display: flex; gap: 4px; margin-bottom: 2px; }
+    .field-key { color: #AAA; min-width: 70px; }
+    .field-val { color: #1A1A1A; }
+    .field-empty { color: #DDD; font-style: italic; }
+    .comp-name  { font-weight: 700; font-size: 11px; margin-top: 6px; margin-bottom: 2px; color: #1A1A1A; }
+
+    /* IMPORTING screen */
+    .spin { font-size: 32px; animation: spin 1s linear infinite; margin-bottom: 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .importing-text { font-size: 13px; font-weight: 600; }
+    .importing-sub  { font-size: 11px; color: #999; margin-top: 4px; }
+
+    /* DONE screen */
+    .done-icon  { font-size: 40px; margin-bottom: 14px; }
+    .done-text  { font-size: 13px; font-weight: 700; color: #22C55E; margin-bottom: 4px; }
+    .done-sub   { font-size: 11px; color: #999; }
+
+    /* ERROR screen */
+    .error-icon { font-size: 32px; margin-bottom: 12px; }
+    .error-text { font-size: 13px; font-weight: 600; color: #E53E3E; margin-bottom: 6px; }
+    .error-sub  { font-size: 11px; color: #999; line-height: 1.5; }
+
+    /* ── Buttons ── */
+    .footer { padding: 12px 16px; border-top: 1px solid #F0F0F0; display: flex; gap: 8px; }
+    .btn { flex: 1; padding: 9px; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-dark   { background: #1A1A1A; color: #fff; }
+    .btn-light  { background: #F5F5F5; color: #1A1A1A; }
+    .btn-green  { background: #22C55E; color: #fff; }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-    .status { font-size: 11px; text-align: center; color: #888; margin-top: 4px; min-height: 16px; }
-    .status.error { color: #E53E3E; }
-    .status.success { color: #22C55E; }
-
-    .hint { font-size: 11px; color: #AAA; line-height: 1.5; text-align: center; padding: 12px 0; }
-
-    .paste-area { width: 100%; height: 72px; border: 1.5px dashed #DDD; border-radius: 8px; padding: 8px; font-size: 11px; color: #1A1A1A; resize: none; outline: none; margin-bottom: 8px; background: #FAFAFA; }
-    .paste-area:focus { border-color: #1A1A1A; background: #fff; }
-
-    .auto-badge { display: flex; align-items: center; gap: 6px; background: #F0FFF4; border: 1px solid #9AE6B4; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #276749; font-weight: 600; }
-    .scanning { display: flex; align-items: center; gap: 6px; background: #EBF4FF; border: 1px solid #BEE3F8; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #1A56A4; font-weight: 600; }
+    .footer.hidden { display: none; }
   </style>
 </head>
 <body>
-  <h1>Brief Importer</h1>
-  <p class="sub">Auto-import з FLOW застосунку</p>
 
-  <div id="scanning" class="scanning" style="display:none;">⏳ Зчитую дані з буфера...</div>
-  <div id="autoBadge" class="auto-badge" style="display:none;">✓ Дані знайдено автоматично!</div>
-
-  <div id="preview" class="preview"></div>
-  <div id="hint" class="hint">Натисни <strong>⚡ Sync</strong> у FLOW,<br>потім відкрий цей плагін — дані підтягнуться автоматично</div>
-
-  <div id="manualSection" style="display:none;">
-    <textarea id="pasteArea" class="paste-area" placeholder="Або встав JSON сюди вручну (⌘V)…"></textarea>
-    <button class="btn btn-secondary" id="pasteBtn" onclick="parseManual()">📋 Зчитати вручну</button>
+  <!-- SCREEN 1: Waiting for paste -->
+  <div class="header">
+    <h1>Brief Importer</h1>
+    <p>FLOW → Figma автоімпорт</p>
   </div>
 
-  <button class="btn btn-primary" id="importBtn" onclick="importToFigma()" disabled>✦ Create in Figma</button>
-  <button class="btn btn-secondary" id="manualBtn" onclick="toggleManual()" style="font-size:11px; padding:7px; margin-bottom:4px;">вставити вручну</button>
-  <div class="status" id="status"></div>
+  <div id="screen-wait" class="screen active">
+    <div class="paste-icon">📋</div>
+    <div class="paste-hint">Натисни <span class="kbd">⌘V</span> щоб імпортувати</div>
+    <div class="paste-sub">
+      Спочатку натисни <strong>⚡ Sync</strong> у FLOW<br>
+      щоб скопіювати бриф у буфер,<br>
+      потім натисни <span class="kbd">⌘V</span> тут
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Preview -->
+  <div id="screen-preview" class="screen" style="align-items:flex-start; justify-content:flex-start; padding-top:14px;">
+    <div class="preview-header">
+      <div id="previewBadge" class="preview-badge badge-brief">📋 Бриф</div>
+      <div id="previewName" class="preview-name">—</div>
+    </div>
+    <div id="previewBody" class="preview-body"></div>
+  </div>
+
+  <!-- SCREEN 3: Importing -->
+  <div id="screen-import" class="screen">
+    <div class="spin">⚙️</div>
+    <div class="importing-text">Створюємо у Figma…</div>
+    <div class="importing-sub">Будь ласка, зачекайте</div>
+  </div>
+
+  <!-- SCREEN 4: Done -->
+  <div id="screen-done" class="screen">
+    <div class="done-icon">✅</div>
+    <div class="done-text">Готово!</div>
+    <div class="done-sub">Документ створено у Figma</div>
+  </div>
+
+  <!-- SCREEN 5: Error -->
+  <div id="screen-error" class="screen">
+    <div class="error-icon">⚠️</div>
+    <div id="errorText" class="error-text">Помилка</div>
+    <div id="errorSub"  class="error-sub">—</div>
+  </div>
+
+  <!-- Footer buttons -->
+  <div id="footer" class="footer hidden">
+    <button id="btnCreate" class="btn btn-dark" onclick="runImport()">✦ Create in Figma</button>
+    <button id="btnReset"  class="btn btn-light" onclick="resetPlugin()">↺</button>
+  </div>
 
   <script>
-    let parsedData = null;
+    var parsedData = null;
 
-    // ─── Auto-read clipboard on open ─────────────────────────────────────────
-    window.addEventListener('load', () => {
-      autoReadClipboard();
+    /* ── Show screen ── */
+    function show(name) {
+      ['wait','preview','import','done','error'].forEach(function(s) {
+        document.getElementById('screen-' + s).classList.remove('active');
+      });
+      document.getElementById('screen-' + name).classList.add('active');
+      var footer = document.getElementById('footer');
+      footer.className = 'footer' + (name === 'preview' ? '' : ' hidden');
+    }
+
+    /* ── Global paste listener ── */
+    document.addEventListener('paste', function(e) {
+      var raw = (e.clipboardData || window.clipboardData).getData('text');
+      if (!raw || !raw.trim()) return;
+      handleData(raw.trim());
     });
 
-    async function autoReadClipboard() {
-      const scanEl = document.getElementById('scanning');
-      scanEl.style.display = 'flex';
-      try {
-        const text = await navigator.clipboard.readText();
-        scanEl.style.display = 'none';
-        if (!text || !text.trim()) { showHint(); return; }
-        const parsed = JSON.parse(text.trim());
-        if (parsed.type !== 'flow_brief' && parsed.type !== 'flow_competitors') { showHint(); return; }
-
-        // Got valid FLOW data!
-        parsedData = parsed;
-        renderPreview(parsed);
-        document.getElementById('importBtn').disabled = false;
-        document.getElementById('hint').style.display = 'none';
-        document.getElementById('autoBadge').style.display = 'flex';
-        const label = parsed.type === 'flow_brief' ? '📋 Бриф' : '🔍 Конкуренти';
-        setStatus('\u2713 ' + label + ': ' + parsed.projectName, 'success');
-
-        // Auto-import after short delay
-        setTimeout(() => importToFigma(), 800);
-
-      } catch (e) {
-        scanEl.style.display = 'none';
-        // clipboard read might fail due to permissions — show manual fallback
-        showHint();
+    /* ── Also catch keydown Cmd/Ctrl+V if paste event doesn't fire ── */
+    document.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        // paste event should fire automatically; this is a fallback trigger notice
       }
-    }
+    });
 
-    function showHint() {
-      document.getElementById('hint').style.display = 'block';
-    }
-
-    function toggleManual() {
-      const ms = document.getElementById('manualSection');
-      ms.style.display = ms.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function parseManual() {
-      const statusEl = document.getElementById('status');
+    function handleData(raw) {
       try {
-        const text = document.getElementById('pasteArea').value.trim();
-        if (!text) { setStatus('⚠ Встав JSON у поле вище', 'error'); return; }
-        const parsed = JSON.parse(text);
+        var parsed = JSON.parse(raw);
         if (parsed.type !== 'flow_brief' && parsed.type !== 'flow_competitors') {
-          setStatus('⚠ Не є FLOW даними', 'error'); return;
+          showError('Не FLOW дані', 'Скопіюй бриф через кнопку ⚡ Sync у FLOW застосунку');
+          return;
         }
         parsedData = parsed;
         renderPreview(parsed);
-        document.getElementById('importBtn').disabled = false;
-        document.getElementById('hint').style.display = 'none';
-        document.getElementById('manualSection').style.display = 'none';
-        document.getElementById('manualBtn').style.display = 'none';
-        const label = parsed.type === 'flow_brief' ? '📋 Бриф' : '🔍 Конкуренти';
-        setStatus('\u2713 ' + label + ': ' + parsed.projectName, 'success');
-      } catch (e) {
-        setStatus('⚠ Некоректний JSON формат', 'error');
-      }
-    }
+        show('preview');
 
-    function setStatus(msg, cls) {
-      const el = document.getElementById('status');
-      el.textContent = msg;
-      el.className = 'status' + (cls ? ' ' + cls : '');
+        // Auto-run import after short delay
+        setTimeout(function() { runImport(); }, 600);
+
+      } catch(err) {
+        showError('Некоректний формат', 'Переконайся що натиснув ⚡ Sync перед копіюванням');
+      }
     }
 
     function renderPreview(data) {
-      const el = document.getElementById('preview');
-      let html = '<div class="project-name">\uD83D\uDCC1 ' + data.projectName + '</div>';
+      var badge = document.getElementById('previewBadge');
+      var name  = document.getElementById('previewName');
+      var body  = document.getElementById('previewBody');
+
+      name.textContent = data.projectName || '—';
 
       if (data.type === 'flow_brief') {
-        const brief  = data.brief || {};
-        const GROUPS = [
-          { id: 'client',      title: 'Про клієнта', emoji: '\uD83D\uDC64', fields: [{ id:'who', label:'Клієнт' }, { id:'usp', label:'УТП' }, { id:'advantages', label:'Переваги' }, { id:'disadvantages', label:'Недоліки' }] },
-          { id: 'goal',        title: 'Мета',         emoji: '\uD83C\uDFAF', fields: [{ id:'keyAction', label:'Ключова дія' }, { id:'purpose', label:'Навіщо' }] },
-          { id: 'wishes',      title: 'Побажання',    emoji: '\u2728',       fields: [{ id:'ui', label:'UI' }, { id:'structure', label:'Структура' }, { id:'limitations', label:'Обмеження' }] },
-          { id: 'competition', title: 'Конкуренція',  emoji: '\uD83D\uDD0D', fields: [{ id:'competitors', label:'Конкуренти' }] },
-          { id: 'additional',  title: 'Додатково',    emoji: '\uD83D\uDCCE', fields: [{ id:'materials', label:'Матеріали' }, { id:'questions', label:'Питання' }] },
+        badge.textContent = '📋 Бриф';
+        badge.className = 'preview-badge badge-brief';
+        var brief = data.brief || {};
+        var html = '';
+        var sections = [
+          { id:'client',      label:'👤 Клієнт',     fields:['who','usp','advantages','disadvantages'] },
+          { id:'goal',        label:'🎯 Мета',        fields:['keyAction','purpose'] },
+          { id:'wishes',      label:'✨ Побажання',   fields:['ui','structure','limitations'] },
+          { id:'competition', label:'🔍 Конкуренція', fields:['competitors'] },
+          { id:'additional',  label:'📎 Додатково',   fields:['materials','questions'] },
         ];
-        html += '<span class="type-badge type-brief">\uD83D\uDCCB Бриф</span>';
-        GROUPS.forEach(function(g) {
-          var gData = brief[g.id] || {};
-          html += '<div class="group"><div class="group-title">' + g.emoji + ' ' + g.title + '</div>';
-          g.fields.forEach(function(f) {
-            var val = gData[f.id] ? gData[f.id].toString().trim() : '';
-            html += '<div class="field"><span class="field-label">' + f.label + ': </span>';
-            html += val ? '<span class="field-value">' + val.slice(0, 70) + (val.length > 70 ? '\u2026' : '') + '</span>' : '<span class="field-empty">\u2014</span>';
-            html += '</div>';
+        sections.forEach(function(sec) {
+          var d = brief[sec.id] || {};
+          var hasVal = sec.fields.some(function(f){ return d[f] && d[f].trim(); });
+          if (!hasVal) return;
+          html += '<div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;margin-top:8px;margin-bottom:3px">' + sec.label + '</div>';
+          sec.fields.forEach(function(f) {
+            var v = d[f] ? d[f].trim() : '';
+            if (!v) return;
+            html += '<div class="field-row"><span class="field-key">' + f + '</span><span class="field-val">' + v.slice(0,50) + (v.length>50?'…':'') + '</span></div>';
           });
-          html += '</div>';
         });
+        body.innerHTML = html || '<span style="color:#CCC">Дані відсутні</span>';
 
       } else if (data.type === 'flow_competitors') {
-        var list = data.competitors || [];
-        html += '<span class="type-badge type-competitors">\uD83D\uDD0D Конкуренти (' + list.length + ')</span>';
-        list.forEach(function(comp, idx) {
-          html += '<div class="group">';
-          html += '<div class="competitor-tab">' + (comp.name || ('Конкурент ' + (idx+1))) + '</div>';
-          var c = comp.conclusion || {};
-          if (c.works_well)   html += '<div class="field"><span class="field-label">\u2705 Добре: </span><span class="field-value">' + c.works_well.slice(0,60) + '\u2026</span></div>';
-          if (c.works_poorly) html += '<div class="field"><span class="field-label">\u274C Погано: </span><span class="field-value">' + c.works_poorly.slice(0,60) + '\u2026</span></div>';
-          if (c.to_remember)  html += '<div class="field"><span class="field-label">\uD83D\uDCCC Запам\'ятати: </span><span class="field-value">' + c.to_remember.slice(0,60) + '\u2026</span></div>';
-          html += '</div>';
+        badge.textContent = '🔍 Конкуренти (' + (data.competitors||[]).length + ')';
+        badge.className = 'preview-badge badge-comp';
+        var html = '';
+        (data.competitors || []).forEach(function(c) {
+          html += '<div class="comp-name">🏢 ' + (c.name || '—') + '</div>';
+          var conc = c.conclusion || {};
+          if (conc.works_well)   html += '<div class="field-row"><span class="field-key" style="color:#22C55E">✅ добре</span><span class="field-val">' + conc.works_well.slice(0,45) + '…</span></div>';
+          if (conc.works_poorly) html += '<div class="field-row"><span class="field-key" style="color:#E53E3E">❌ погано</span><span class="field-val">' + conc.works_poorly.slice(0,45) + '…</span></div>';
         });
+        body.innerHTML = html || '<span style="color:#CCC">Немає даних</span>';
       }
-
-      el.innerHTML = html;
-      el.classList.add('visible');
     }
 
-    function importToFigma() {
+    function runImport() {
       if (!parsedData) return;
-      setStatus('\u23F3 Створюємо в Figma...', '');
-      document.getElementById('importBtn').disabled = true;
-      document.getElementById('autoBadge').style.display = 'none';
+      show('import');
       var msgType = parsedData.type === 'flow_brief' ? 'CREATE_BRIEF' : 'CREATE_COMPETITORS';
       parent.postMessage({ pluginMessage: { type: msgType, data: parsedData } }, '*');
+    }
+
+    function resetPlugin() {
+      parsedData = null;
+      show('wait');
+    }
+
+    function showError(title, sub) {
+      document.getElementById('errorText').textContent = title;
+      document.getElementById('errorSub').textContent  = sub;
+      show('error');
+      setTimeout(function() { show('wait'); }, 3000);
     }
 
     window.onmessage = function(event) {
       var msg = event.data.pluginMessage;
       if (!msg) return;
       if (msg.type === 'DONE') {
-        setStatus('\u2713 Створено в Figma!', 'success');
-        document.getElementById('importBtn').disabled = false;
+        show('done');
       } else if (msg.type === 'ERROR') {
-        setStatus('\u2717 ' + msg.message, 'error');
-        document.getElementById('importBtn').disabled = false;
+        showError('Помилка Figma', msg.message || 'Спробуй ще раз');
       }
     };
   </script>
