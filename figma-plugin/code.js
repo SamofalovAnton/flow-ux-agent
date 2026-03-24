@@ -45,10 +45,10 @@ function F(name, dir, opts = {}) {
   f.fills       = opts.fill ? [{ type: 'SOLID', color: opts.fill }] : [];
   if (opts.radius) f.cornerRadius = opts.radius;
   if (opts.stroke) { f.strokes = [{ type: 'SOLID', color: opts.stroke }]; f.strokeWeight = opts.sw || 1; }
-  f.paddingTop    = opts.pt ?? opts.py ?? opts.p ?? 0;
-  f.paddingBottom = opts.pb ?? opts.py ?? opts.p ?? 0;
-  f.paddingLeft   = opts.pl ?? opts.px ?? opts.p ?? 0;
-  f.paddingRight  = opts.pr ?? opts.px ?? opts.p ?? 0;
+  f.paddingTop    = opts.pt != null ? opts.pt : (opts.py != null ? opts.py : (opts.p != null ? opts.p : 0));
+  f.paddingBottom = opts.pb != null ? opts.pb : (opts.py != null ? opts.py : (opts.p != null ? opts.p : 0));
+  f.paddingLeft   = opts.pl != null ? opts.pl : (opts.px != null ? opts.px : (opts.p != null ? opts.p : 0));
+  f.paddingRight  = opts.pr != null ? opts.pr : (opts.px != null ? opts.px : (opts.p != null ? opts.p : 0));
   f.itemSpacing   = opts.gap || 0;
   f.primaryAxisSizingMode   = 'AUTO';
   f.counterAxisSizingMode   = 'AUTO';

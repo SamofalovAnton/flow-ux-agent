@@ -1,5 +1,5 @@
 {
-  "name": "FLOW Brief Importer",
+  "name": "Brief Importer",
   "id": "flow-brief-importer",
   "api": "1.0.0",
   "main": "code.js",

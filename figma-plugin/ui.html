@@ -36,6 +36,8 @@
     .status.error { color: #E53E3E; }
     .status.success { color: #22C55E; }
     .hint { font-size: 11px; color: #AAA; line-height: 1.5; text-align: center; padding: 12px 0; }
+    .paste-area { width: 100%; height: 72px; border: 1.5px dashed #DDD; border-radius: 8px; padding: 8px; font-size: 11px; color: #1A1A1A; resize: none; outline: none; margin-bottom: 8px; background: #FAFAFA; }
+    .paste-area:focus { border-color: #1A1A1A; background: #fff; }
   </style>
 </head>
 <body>
@@ -43,19 +45,21 @@
   <p class="sub">Clipboard bridge — імпорт з FLOW застосунку</p>
 
   <div id="preview" class="preview"></div>
-  <div id="hint" class="hint">Скопіюй бриф або аналіз конкурентів<br>у FLOW застосунку, потім натисни Paste</div>
+  <div id="hint" class="hint">Скопіюй бриф або аналіз конкурентів<br>у FLOW застосунку, потім встав сюди (⌘V)</div>
 
-  <button class="btn btn-secondary" id="pasteBtn" onclick="paste()">📋 Paste from FLOW</button>
+  <textarea id="pasteArea" class="paste-area" placeholder="Встав JSON сюди (⌘V / Ctrl+V)…"></textarea>
+  <button class="btn btn-secondary" id="pasteBtn" onclick="paste()">📋 Зчитати дані</button>
   <button class="btn btn-primary" id="importBtn" onclick="importToFigma()" disabled>✦ Create in Figma</button>
   <div class="status" id="status"></div>
 
   <script>
     let parsedData = null;
 
-    async function paste() {
+    function paste() {
       const statusEl = document.getElementById('status');
       try {
-        const text   = await navigator.clipboard.readText();
+        const text   = document.getElementById('pasteArea').value.trim();
+        if (!text) throw new Error('empty');
         const parsed = JSON.parse(text);
         if (parsed.type !== 'flow_brief' && parsed.type !== 'flow_competitors') {
           throw new Error('not_flow');
@@ -64,13 +68,17 @@
         renderPreview(parsed);
         document.getElementById('importBtn').disabled = false;
         document.getElementById('hint').style.display = 'none';
+        document.getElementById('pasteArea').style.display = 'none';
+        document.getElementById('pasteBtn').style.display = 'none';
         const label = parsed.type === 'flow_brief' ? '📋 Бриф' : '🔍 Аналіз конкурентів';
-        statusEl.textContent = `✓ ${label}: ${parsed.projectName}`;
+        statusEl.textContent = '\u2713 ' + label + ': ' + parsed.projectName;
         statusEl.className = 'status success';
       } catch (e) {
         statusEl.textContent = e.message === 'not_flow'
           ? '⚠ Буфер не містить FLOW дані'
-          : '⚠ Немає даних або некоректний формат';
+          : e.message === 'empty'
+          ? '⚠ Встав JSON у поле вище'
+          : '⚠ Некоректний формат JSON';
         statusEl.className = 'status error';
       }
     }
