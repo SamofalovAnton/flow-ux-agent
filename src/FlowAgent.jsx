@@ -956,7 +956,7 @@ Return ONLY valid JSON (no markdown fences):
   };
 
   return (
-    <div style={{ height: '100vh', background: '#FAFAFA', display: 'flex', flexDirection: 'column', fontFamily: FONT_BODY, color: '#1A1A1A' }}>
+    <div style={{ height: '100vh', background: '#E4E4E4', display: 'flex', flexDirection: 'column', fontFamily: FONT_BODY, color: '#1A1A1A' }}>
 
       {/* Figma Export Modal */}
       {figmaModal && (
@@ -989,7 +989,7 @@ Return ONLY valid JSON (no markdown fences):
       )}
 
       {/* Header */}
-      <div style={{ padding: '12px 24px', background: '#fff', borderBottom: '1px solid #E5E5E5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+      <div style={{ padding: '12px 24px', background: 'transparent', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={() => setView('projects')} style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#444' }}><Icon n="arrow_back" s={22} /></button>
           <div>
@@ -1027,8 +1027,8 @@ Return ONLY valid JSON (no markdown fences):
               return (
                 <div key={m.id} onClick={() => setCurrentMode(m.id)} title={sidebarCollapsed ? `${i + 1}. ${m.title}` : undefined}
                   style={{ padding: sidebarCollapsed ? '0' : '10px', background: active ? '#F5F5F5' : 'transparent', border: active ? '1px solid #1A1A1A' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '8px', position: 'relative' }}>
-                  <div style={{ width: sidebarCollapsed ? '36px' : '22px', height: sidebarCollapsed ? '36px' : '22px', borderRadius: sidebarCollapsed ? '8px' : '4px', background: done ? '#22C55E' : active ? '#1A1A1A' : '#F0F0F0', color: done || active ? '#fff' : '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', flexShrink: 0 }}>
-                    {done ? <Icon n="check" s={sidebarCollapsed ? 18 : 14} style={{ color: '#fff' }} /> : (sidebarCollapsed ? <Icon n={m.icon} s={18} style={{ color: active ? '#fff' : '#888' }} /> : i + 1)}
+                  <div style={{ width: sidebarCollapsed ? '36px' : '22px', height: sidebarCollapsed ? '36px' : '22px', borderRadius: sidebarCollapsed ? '8px' : '4px', background: done ? '#22C55E' : active ? '#1A1A1A' : '#F0F0F0', color: done || active ? '#fff' : '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', flexShrink: 0, overflow: 'hidden' }}>
+                    {done ? <Icon n="check" s={sidebarCollapsed ? 16 : 13} style={{ color: '#fff' }} /> : (sidebarCollapsed ? <Icon n={m.icon} s={16} style={{ color: active ? '#fff' : '#888' }} /> : i + 1)}
                   </div>
                   {!sidebarCollapsed && (
                     <>
