@@ -1010,9 +1010,9 @@ Return ONLY valid JSON (no markdown fences):
         </div>
       </div>
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', background: '#E4E4E4', gap: '8px', padding: '8px' }}>
         {/* Sidebar */}
-        <div style={{ width: sidebarCollapsed ? '56px' : '220px', background: '#fff', borderRight: '1px solid #E5E5E5', display: 'flex', flexDirection: 'column', flexShrink: 0, transition: 'width 0.2s ease', overflow: 'hidden' }}>
+        <div style={{ width: sidebarCollapsed ? '56px' : '220px', background: '#fff', borderRadius: '10px', display: 'flex', flexDirection: 'column', flexShrink: 0, transition: 'width 0.2s ease', overflow: 'hidden' }}>
           <div style={{ padding: sidebarCollapsed ? '12px 0' : '12px 12px', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', borderBottom: '1px solid #E5E5E5', flexShrink: 0 }}>
             {!sidebarCollapsed && <span style={{ fontSize: '10px', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>Process Steps</span>}
             <button onClick={() => setSidebarCollapsed(c => !c)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999', display: 'flex', alignItems: 'center', borderRadius: '4px' }}>
@@ -1087,7 +1087,7 @@ Return ONLY valid JSON (no markdown fences):
         ) : <>
 
         {/* Chat — Column 2 */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', minWidth: 0, borderRight: '1px solid #E5E5E5' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', minWidth: 0, borderRadius: '10px', overflow: 'hidden' }}>
           <div style={{ padding: '12px 24px', borderBottom: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
@@ -1170,22 +1170,21 @@ Return ONLY valid JSON (no markdown fences):
           </div>
         </div>
 
-        {/* Resize handle */}
-        <div
-          onMouseDown={e => {
-            isDraggingRef.current = true;
-            dragStartRef.current  = { x: e.clientX, width: rightPanelWidth };
-            document.body.style.cursor     = 'col-resize';
-            document.body.style.userSelect = 'none';
-            e.preventDefault();
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#AEAEAE'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#D8D8D8'; }}
-          style={{ width: '5px', background: '#D8D8D8', cursor: 'col-resize', flexShrink: 0, transition: 'background 0.15s' }}
-        />
-
-        {/* Right panel — Column 3 */}
-        <RightPanel
+        {/* Right panel — Column 3 (resize handle is absolute overlay on left edge) */}
+        <div style={{ position: 'relative', display: 'flex', flexShrink: 0 }}>
+          <div
+            onMouseDown={e => {
+              isDraggingRef.current = true;
+              dragStartRef.current  = { x: e.clientX, width: rightPanelWidth };
+              document.body.style.cursor     = 'col-resize';
+              document.body.style.userSelect = 'none';
+              e.preventDefault();
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.15)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            style={{ position: 'absolute', left: '-8px', top: 0, bottom: 0, width: '16px', cursor: 'col-resize', zIndex: 20, borderRadius: '8px', transition: 'background 0.15s' }}
+          />
+          <RightPanel
           currentMode={currentMode}
           currentProject={currentProject}
           briefGroups={briefGroups}
@@ -1205,6 +1204,7 @@ Return ONLY valid JSON (no markdown fences):
           FONT_BODY={FONT_BODY}
           width={rightPanelWidth}
         />
+        </div>
         </>}
       </div>
 
@@ -1269,7 +1269,7 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
     </div>
   );
 
-  const panelStyle = { width: `${width || 300}px`, background: '#FAFAFA', borderLeft: '1px solid #E5E5E5', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 };
+  const panelStyle = { width: `${width || 300}px`, background: '#FAFAFA', borderRadius: '10px', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 };
 
   if (currentMode === 'brief') {
     const data = currentProject?.projectData?.brief_structured || briefData || {};
