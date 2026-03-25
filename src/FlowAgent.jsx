@@ -998,15 +998,15 @@ Return ONLY valid JSON (no markdown fences):
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => setShowApiInput(true)} style={{ padding: '7px 12px', background: apiKey ? '#F0FFF4' : '#FFF8F0', border: apiKey ? '1px solid #9AE6B4' : '1px solid #FBD38D', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: apiKey ? '#276749' : '#744210' }}>{apiKey ? '🔑 ✓' : '🔑 API'}</button>
-          <button onClick={exportProject} style={{ padding: '7px 14px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}><Icon n="download" s={16} />Export</button>
+          <button onClick={() => setShowApiInput(true)} style={{ padding: '7px 12px', background: apiKey ? '#F0FFF4' : '#FFF8F0', border: '0px solid #1A1A1A', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: apiKey ? '#276749' : '#744210' }}>{apiKey ? '🔑 ✓' : '🔑 API'}</button>
+          <button onClick={exportProject} style={{ padding: '7px 14px', background: '#fff', border: '0px solid #1A1A1A', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}><Icon n="download" s={16} />Export</button>
           {!currentProject?.completedAt && (
             <button onClick={() => setShowCompleteConfirm(true)}
-              style={{ padding: '7px 14px', background: allDone ? '#22C55E' : '#F5F5F5', border: allDone ? 'none' : '1px solid #E5E5E5', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: allDone ? '#fff' : '#999', fontWeight: '600' }}>
+              style={{ padding: '7px 14px', background: allDone ? '#22C55E' : '#F5F5F5', border: '0px solid #1A1A1A', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: allDone ? '#fff' : '#999', fontWeight: '600' }}>
               {allDone ? '🎉 Complete Project' : `✓ Complete (${(currentProject?.completedSteps || []).length}/9)`}
             </button>
           )}
-          {currentProject?.completedAt && <div style={{ padding: '7px 14px', background: '#F0FFF4', border: '1px solid #9AE6B4', borderRadius: '8px', fontSize: '12px', color: '#276749', fontWeight: '600' }}>✅ Completed</div>}
+          {currentProject?.completedAt && <div style={{ padding: '7px 14px', background: '#F0FFF4', border: '0px solid #1A1A1A', borderRadius: '8px', fontSize: '12px', color: '#276749', fontWeight: '600' }}>✅ Completed</div>}
         </div>
       </div>
 
