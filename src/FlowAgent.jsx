@@ -1026,7 +1026,7 @@ Return ONLY valid JSON (no markdown fences):
               const hasMsg = (currentProject?.messages[m.id] || []).length > 1;
               return (
                 <div key={m.id} onClick={() => setCurrentMode(m.id)} title={sidebarCollapsed ? `${i + 1}. ${m.title}` : undefined}
-                  style={{ padding: sidebarCollapsed ? '0' : '10px', background: active ? '#F5F5F5' : 'transparent', border: active ? '1px solid #1A1A1A' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '8px', position: 'relative' }}>
+                  style={{ padding: sidebarCollapsed ? '0' : '10px', background: active ? '#F5F5F5' : 'transparent', border: '0px solid #1A1A1A', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '8px', position: 'relative' }}>
                   <div style={{ width: sidebarCollapsed ? '36px' : '22px', height: sidebarCollapsed ? '36px' : '22px', borderRadius: sidebarCollapsed ? '8px' : '4px', background: done ? '#22C55E' : active ? '#1A1A1A' : '#F0F0F0', color: done || active ? '#fff' : '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', flexShrink: 0, overflow: 'hidden' }}>
                     {done ? <Icon n="check" s={sidebarCollapsed ? 16 : 13} style={{ color: '#fff' }} /> : (sidebarCollapsed ? <Icon n={m.icon} s={16} style={{ color: active ? '#fff' : '#888' }} /> : i + 1)}
                   </div>
@@ -1048,7 +1048,7 @@ Return ONLY valid JSON (no markdown fences):
             <div style={{ height: '1px', background: '#E5E5E5', margin: '6px 0' }} />
             <div onClick={() => setCurrentMode('calls')}
               title={sidebarCollapsed ? 'Client Calls' : undefined}
-              style={{ padding: sidebarCollapsed ? '0' : '10px', background: currentMode === 'calls' ? '#F5F5F5' : 'transparent', border: currentMode === 'calls' ? '1px solid #1A1A1A' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '8px' }}>
+              style={{ padding: sidebarCollapsed ? '0' : '10px', background: currentMode === 'calls' ? '#F5F5F5' : 'transparent', border: '0px solid #1A1A1A', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '8px' }}>
               <div style={{ width: sidebarCollapsed ? '36px' : '22px', height: sidebarCollapsed ? '36px' : '22px', borderRadius: sidebarCollapsed ? '8px' : '4px', background: currentMode === 'calls' ? '#1A1A1A' : '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Icon n="phone" s={sidebarCollapsed ? 18 : 14} style={{ color: currentMode === 'calls' ? '#fff' : '#888' }} />
               </div>
