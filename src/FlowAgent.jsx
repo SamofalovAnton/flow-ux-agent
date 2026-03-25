@@ -398,9 +398,16 @@ function FlowApp({ currentUser, onLogout }) {
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [projectTab, setProjectTab]               = useState('active'); // 'active' | 'archive'
   const [figmaModal, setFigmaModal]               = useState(null); // { projectName, type }
+  const [rightPanelWidth, setRightPanelWidth]     = useState(300);
+  const [selectedCallId, setSelectedCallId]       = useState(null);
+  const [callSearch, setCallSearch]               = useState('');
+  const [callAnalyzing, setCallAnalyzing]         = useState(false);
 
   const fileInputRef   = useRef(null);
   const messagesEndRef = useRef(null);
+  const isDraggingRef  = useRef(false);
+  const dragStartRef   = useRef({ x: 0, width: 0 });
+  const importRef      = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -424,6 +431,28 @@ function FlowApp({ currentUser, onLogout }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentProject?.messages, loading]);
 
+  // ─── Resize right panel ───────────────────────────────────────────────────
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const delta = dragStartRef.current.x - e.clientX;
+      const newW  = Math.min(600, Math.max(220, dragStartRef.current.width + delta));
+      setRightPanelWidth(newW);
+    };
+    const onUp = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
   const updateProject = useCallback((updates) => {
     setCurrentProject(prev => {
       const updated = { ...prev, ...updates };
@@ -445,6 +474,7 @@ function FlowApp({ currentUser, onLogout }) {
       messages: Object.fromEntries(modes.map(m => [m.id, [{ role: 'assistant', content: getInitialMessage(m.id) }]])),
       files: Object.fromEntries(modes.map(m => [m.id, []])),
       projectData: {},
+      calls: [],
     };
     setProjects(ps => [...ps, proj]);
     setNewName('');
@@ -462,6 +492,8 @@ function FlowApp({ currentUser, onLogout }) {
       if (p.projectData?.[`${id}_structured`]) restored[id] = p.projectData[`${id}_structured`];
     });
     setModeData(restored);
+    setSelectedCallId(null);
+    setCallSearch('');
     setView('workspace');
   };
 
@@ -633,6 +665,85 @@ function FlowApp({ currentUser, onLogout }) {
     setApiInput('');
   };
 
+  // ─── Backup / Restore ─────────────────────────────────────────────────────
+  const exportAllProjects = () => {
+    const data = { version: 1, exportedAt: new Date().toISOString(), projects };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `flow-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+  };
+
+  const importProjects = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed   = JSON.parse(ev.target.result);
+        const imported = Array.isArray(parsed) ? parsed : (parsed.projects || []);
+        const valid    = imported.filter(p => p.id && p.name);
+        setProjects(prev => {
+          const merged = [...prev];
+          valid.forEach(p => {
+            const idx = merged.findIndex(x => x.id === p.id);
+            if (idx === -1) merged.push({ ...p, userId: currentUser.userId });
+            else merged[idx] = { ...merged[idx], ...p };
+          });
+          return merged;
+        });
+      } catch { alert('Invalid backup file'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // ─── Call helpers ─────────────────────────────────────────────────────────
+  const createCall = () => {
+    const call = {
+      id: Date.now().toString(),
+      title: 'Call ' + new Date().toLocaleDateString('en-US'),
+      date: new Date().toISOString(),
+      transcript: '',
+      tasks: [],
+      summary: '',
+      analyzedAt: null,
+    };
+    updateProject({ calls: [...(currentProject?.calls || []), call] });
+    setSelectedCallId(call.id);
+  };
+
+  const updateCall = (callId, updates) => {
+    const calls = (currentProject?.calls || []).map(c => c.id === callId ? { ...c, ...updates } : c);
+    updateProject({ calls });
+  };
+
+  const deleteCall = (callId) => {
+    updateProject({ calls: (currentProject?.calls || []).filter(c => c.id !== callId) });
+    if (selectedCallId === callId) setSelectedCallId(null);
+  };
+
+  const analyzeCall = async (call) => {
+    if (!call.transcript.trim() || !apiKey) return;
+    setCallAnalyzing(true);
+    try {
+      const text = await callClaude({
+        system: `You are a project manager. Analyze the call transcript and extract action items and a brief summary.
+Return ONLY valid JSON (no markdown fences):
+{"tasks":[{"text":"action item","done":false}],"summary":"2-3 sentence summary"}`,
+        messages: [{ role: 'user', content: `Transcript:\n\n${call.transcript}` }],
+      });
+      const json = JSON.parse(text.replace(/```json|```/g, '').trim());
+      updateCall(call.id, {
+        tasks: json.tasks || [],
+        summary: json.summary || '',
+        analyzedAt: new Date().toISOString(),
+      });
+    } catch (e) { console.error('analyzeCall:', e); }
+    setCallAnalyzing(false);
+  };
+
   // ─── Modal wrapper ────────────────────────────────────────────────────────
   const ModalWrap = ({ onClose, children }) => (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
@@ -671,6 +782,15 @@ function FlowApp({ currentUser, onLogout }) {
               <button onClick={() => setShowApiInput(true)}
                 style={{ padding: '8px 16px', background: apiKey ? '#F0FFF4' : '#FFF8F0', border: apiKey ? '1px solid #9AE6B4' : '1px solid #FBD38D', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: apiKey ? '#276749' : '#744210', fontFamily: FONT_BODY }}>
                 {apiKey ? '🔑 API Key ✓' : '🔑 Add API Key'}
+              </button>
+              <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={importProjects} />
+              <button onClick={exportAllProjects} title="Export all projects to JSON backup"
+                style={{ padding: '8px 14px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#444', fontFamily: FONT_BODY, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Icon n="download" s={15} />Backup
+              </button>
+              <button onClick={() => importRef.current?.click()} title="Restore projects from JSON backup"
+                style={{ padding: '8px 14px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#444', fontFamily: FONT_BODY, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Icon n="upload" s={15} />Restore
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px 6px 8px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px' }}>
                 {currentUser.picture
@@ -923,8 +1043,48 @@ function FlowApp({ currentUser, onLogout }) {
                 </div>
               );
             })}
+
+            {/* ── Client Calls ── */}
+            <div style={{ height: '1px', background: '#E5E5E5', margin: '6px 0' }} />
+            <div onClick={() => setCurrentMode('calls')}
+              title={sidebarCollapsed ? 'Client Calls' : undefined}
+              style={{ padding: sidebarCollapsed ? '0' : '10px', background: currentMode === 'calls' ? '#F5F5F5' : 'transparent', border: currentMode === 'calls' ? '1px solid #1A1A1A' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '8px' }}>
+              <div style={{ width: sidebarCollapsed ? '36px' : '22px', height: sidebarCollapsed ? '36px' : '22px', borderRadius: sidebarCollapsed ? '8px' : '4px', background: currentMode === 'calls' ? '#1A1A1A' : '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon n="phone" s={sidebarCollapsed ? 18 : 14} style={{ color: currentMode === 'calls' ? '#fff' : '#888' }} />
+              </div>
+              {!sidebarCollapsed && (
+                <>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Client Calls</div>
+                    <div style={{ fontSize: '10px', color: '#999', whiteSpace: 'nowrap' }}>Transcripts & tasks</div>
+                  </div>
+                  {(currentProject?.calls || []).length > 0 && (
+                    <span style={{ fontSize: '10px', background: '#E5E5E5', color: '#666', padding: '1px 6px', borderRadius: '10px', fontWeight: '600' }}>
+                      {(currentProject.calls).length}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
+
+        {currentMode === 'calls' ? (
+          <CallsView
+            currentProject={currentProject}
+            updateCall={updateCall}
+            createCall={createCall}
+            deleteCall={deleteCall}
+            analyzeCall={analyzeCall}
+            callAnalyzing={callAnalyzing}
+            selectedCallId={selectedCallId}
+            setSelectedCallId={setSelectedCallId}
+            callSearch={callSearch}
+            setCallSearch={setCallSearch}
+            apiKey={apiKey}
+            FONT_BODY={FONT_BODY}
+          />
+        ) : <>
 
         {/* Chat — Column 2 */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', minWidth: 0, borderRight: '1px solid #E5E5E5' }}>
@@ -1010,6 +1170,20 @@ function FlowApp({ currentUser, onLogout }) {
           </div>
         </div>
 
+        {/* Resize handle */}
+        <div
+          onMouseDown={e => {
+            isDraggingRef.current = true;
+            dragStartRef.current  = { x: e.clientX, width: rightPanelWidth };
+            document.body.style.cursor     = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#AEAEAE'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#D8D8D8'; }}
+          style={{ width: '5px', background: '#D8D8D8', cursor: 'col-resize', flexShrink: 0, transition: 'background 0.15s' }}
+        />
+
         {/* Right panel — Column 3 */}
         <RightPanel
           currentMode={currentMode}
@@ -1029,7 +1203,9 @@ function FlowApp({ currentUser, onLogout }) {
           handleSync={handleSync}
           copyToFigma={copyToFigma}
           FONT_BODY={FONT_BODY}
+          width={rightPanelWidth}
         />
+        </>}
       </div>
 
       {showApiInput && (
@@ -1063,7 +1239,7 @@ function FlowApp({ currentUser, onLogout }) {
 }
 
 // ─── Right Panel ──────────────────────────────────────────────────────────────
-function RightPanel({ currentMode, currentProject, briefGroups, briefData, competitorGroups, competitorData, selectedCompIdx, setSelectedCompIdx, modeStructures, modeData, modes, hasChat, isSyncing, hasStructured, handleSync, copyToFigma, FONT_BODY }) {
+function RightPanel({ currentMode, currentProject, briefGroups, briefData, competitorGroups, competitorData, selectedCompIdx, setSelectedCompIdx, modeStructures, modeData, modes, hasChat, isSyncing, hasStructured, handleSync, copyToFigma, FONT_BODY, width }) {
 
   const PanelField = ({ label, value, colors }) => (
     <div style={{ background: colors?.bg || '#fff', border: `1px solid ${colors?.border || '#E5E5E5'}`, borderRadius: '8px', padding: '9px 11px', marginBottom: '5px' }}>
@@ -1093,19 +1269,19 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
     </div>
   );
 
-  const panelStyle = { width: '300px', background: '#FAFAFA', borderLeft: '1px solid #E5E5E5', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 };
+  const panelStyle = { width: `${width || 300}px`, background: '#FAFAFA', borderLeft: '1px solid #E5E5E5', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 };
 
   if (currentMode === 'brief') {
     const data = currentProject?.projectData?.brief_structured || briefData || {};
     return (
       <div style={panelStyle}>
         <PanelHeader title="Brief Summary" />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {briefGroups.map(group => {
             const gd = data[group.id] || {};
             const hasData = group.fields.some(f => gd[f.id]?.trim());
             return (
-              <div key={group.id} style={{ marginBottom: '14px' }}>
+              <div key={group.id} style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px' }}>
                   <span style={{ fontSize: '12px' }}>{group.emoji}</span>
                   <span style={{ fontSize: '10px', fontWeight: '700', color: '#1A1A1A', textTransform: 'uppercase', letterSpacing: '0.4px', fontFamily: FONT_BODY }}>{group.title}</span>
@@ -1130,7 +1306,7 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
       to_remember:  { bg: '#FFFBEB', border: '#FBD38D', label: '#744210' },
     };
     return (
-      <div style={{ ...panelStyle, width: '320px' }}>
+      <div style={{ ...panelStyle, width: `${Math.max(width || 300, 320)}px` }}>
         <PanelHeader title="Competitor Analysis" />
         {list.length > 0 && (
           <div style={{ padding: '7px 10px', borderBottom: '1px solid #E5E5E5', display: 'flex', gap: '5px', flexWrap: 'wrap', flexShrink: 0, background: '#fff' }}>
@@ -1142,7 +1318,7 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
             ))}
           </div>
         )}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {!active ? (
             <div style={{ textAlign: 'center', padding: '40px 16px', color: '#CCC' }}>
               <div style={{ fontSize: '28px', marginBottom: '10px' }}>🔍</div>
@@ -1154,7 +1330,7 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
                 const gd = active[group.id] || {};
                 const hasData = group.fields.some(f => gd[f.id]?.trim());
                 return (
-                  <div key={group.id} style={{ marginBottom: '14px' }}>
+                  <div key={group.id} style={{ marginBottom: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px' }}>
                       <span style={{ fontSize: '12px' }}>{group.emoji}</span>
                       <span style={{ fontSize: '10px', fontWeight: '700', color: '#1A1A1A', textTransform: 'uppercase', letterSpacing: '0.4px', fontFamily: FONT_BODY }}>{group.title}</span>
@@ -1192,7 +1368,7 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
   return (
     <div style={panelStyle}>
       <PanelHeader title={currModeInfo?.title || currentMode} />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         {!data ? (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: '#CCC' }}>
             <div style={{ fontSize: '28px', marginBottom: '10px' }}>{currModeInfo?.icon}</div>
@@ -1203,7 +1379,7 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
             const gd = data[group.id] || {};
             const hasData = group.fields.some(f => gd[f.id]?.trim());
             return (
-              <div key={group.id} style={{ marginBottom: '14px' }}>
+              <div key={group.id} style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px' }}>
                   <span style={{ fontSize: '12px' }}>{group.emoji}</span>
                   <span style={{ fontSize: '10px', fontWeight: '700', color: '#1A1A1A', textTransform: 'uppercase', letterSpacing: '0.4px', fontFamily: FONT_BODY }}>{group.title}</span>
@@ -1220,6 +1396,210 @@ function RightPanel({ currentMode, currentProject, briefGroups, briefData, compe
           })
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Calls View ───────────────────────────────────────────────────────────────
+function CallsView({ currentProject, updateCall, createCall, deleteCall, analyzeCall, callAnalyzing, selectedCallId, setSelectedCallId, callSearch, setCallSearch, apiKey, FONT_BODY }) {
+  const calls        = currentProject?.calls || [];
+  const filtered     = calls.filter(c =>
+    c.title.toLowerCase().includes(callSearch.toLowerCase()) ||
+    c.transcript.toLowerCase().includes(callSearch.toLowerCase())
+  );
+  const selectedCall = calls.find(c => c.id === selectedCallId) || null;
+
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInput,   setTitleInput]   = useState('');
+
+  const commitTitle = () => {
+    if (titleInput.trim()) updateCall(selectedCall.id, { title: titleInput.trim() });
+    setEditingTitle(false);
+  };
+
+  return (
+    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+      {/* ── Calls list ── */}
+      <div style={{ width: '260px', background: '#FAFAFA', borderRight: '1px solid #E5E5E5', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '12px', borderBottom: '1px solid #E5E5E5', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#999', fontFamily: FONT_BODY }}>Client Calls</span>
+            <button onClick={createCall}
+              style={{ width: '26px', height: '26px', background: '#1A1A1A', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px', lineHeight: 1 }}>+</button>
+          </div>
+          <input value={callSearch} onChange={e => setCallSearch(e.target.value)} placeholder="Search calls..."
+            style={{ width: '100%', padding: '7px 10px', border: '1px solid #E5E5E5', borderRadius: '8px', fontSize: '12px', outline: 'none', boxSizing: 'border-box', background: '#fff', fontFamily: FONT_BODY }} />
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 12px', color: '#CCC' }}>
+              <div style={{ fontSize: '28px', marginBottom: '10px' }}>📞</div>
+              <div style={{ fontSize: '12px', lineHeight: '1.6', fontFamily: FONT_BODY }}>
+                {callSearch ? 'No results' : 'No calls yet.\nClick + to add one.'}
+              </div>
+            </div>
+          ) : filtered.map(c => {
+            const active    = c.id === selectedCallId;
+            const taskTotal = (c.tasks || []).length;
+            const taskDone  = (c.tasks || []).filter(t => t.done).length;
+            return (
+              <div key={c.id} onClick={() => setSelectedCallId(c.id)}
+                style={{ padding: '10px 12px', marginBottom: '4px', background: active ? '#fff' : 'transparent', border: active ? '1px solid #1A1A1A' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '3px', fontFamily: FONT_BODY, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', color: '#999', fontFamily: FONT_BODY }}>{new Date(c.date).toLocaleDateString('en-US')}</span>
+                  {taskTotal > 0 && (
+                    <span style={{ fontSize: '10px', background: taskDone === taskTotal ? '#F0FFF4' : '#F5F5F5', color: taskDone === taskTotal ? '#276749' : '#666', padding: '1px 6px', borderRadius: '8px', fontWeight: '600', fontFamily: FONT_BODY }}>
+                      {taskDone}/{taskTotal}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── No call selected ── */}
+      {!selectedCall ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#fff', gap: '12px', color: '#CCC' }}>
+          <div style={{ fontSize: '40px' }}>📞</div>
+          <div style={{ fontSize: '14px', fontFamily: FONT_BODY }}>Select a call or create a new one</div>
+          <button onClick={createCall}
+            style={{ padding: '9px 22px', background: '#1A1A1A', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontFamily: FONT_BODY }}>
+            + New Call
+          </button>
+        </div>
+      ) : (
+
+        /* ── Selected call: transcript + tasks ── */
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+          {/* Transcript column */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', borderRight: '1px solid #E5E5E5', overflow: 'hidden' }}>
+
+            {/* Call header */}
+            <div style={{ padding: '12px 20px', borderBottom: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              {editingTitle ? (
+                <input autoFocus value={titleInput}
+                  onChange={e => setTitleInput(e.target.value)}
+                  onBlur={commitTitle}
+                  onKeyDown={e => { if (e.key === 'Enter') commitTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
+                  style={{ flex: 1, fontSize: '15px', fontWeight: '600', border: '1px solid #1A1A1A', borderRadius: '6px', padding: '4px 8px', outline: 'none', fontFamily: FONT_BODY }} />
+              ) : (
+                <div onClick={() => { setEditingTitle(true); setTitleInput(selectedCall.title); }}
+                  title="Click to rename"
+                  style={{ flex: 1, fontSize: '15px', fontWeight: '600', cursor: 'text', fontFamily: FONT_BODY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {selectedCall.title}
+                </div>
+              )}
+
+              <input type="date" value={selectedCall.date.slice(0, 10)}
+                onChange={e => updateCall(selectedCall.id, { date: new Date(e.target.value + 'T12:00:00').toISOString() })}
+                style={{ padding: '4px 8px', border: '1px solid #E5E5E5', borderRadius: '6px', fontSize: '12px', outline: 'none', fontFamily: FONT_BODY }} />
+
+              {!apiKey && (
+                <span style={{ fontSize: '11px', color: '#F59E0B', background: '#FFFBEB', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap' }}>API key needed</span>
+              )}
+
+              <button onClick={() => analyzeCall(selectedCall)}
+                disabled={callAnalyzing || !selectedCall.transcript.trim() || !apiKey}
+                style={{ padding: '7px 14px', background: callAnalyzing ? '#999' : '#1A1A1A', color: '#fff', border: 'none', borderRadius: '8px', cursor: callAnalyzing || !selectedCall.transcript.trim() || !apiKey ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', fontFamily: FONT_BODY, opacity: (!selectedCall.transcript.trim() || !apiKey) ? 0.5 : 1 }}>
+                {callAnalyzing ? '⏳ Analyzing...' : '✦ Analyze'}
+              </button>
+
+              <button onClick={() => { if (window.confirm('Delete this call?')) deleteCall(selectedCall.id); }}
+                title="Delete call"
+                style={{ width: '30px', height: '30px', background: 'none', border: '1px solid #E5E5E5', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#AAA', flexShrink: 0, fontSize: '15px' }}>
+                🗑
+              </button>
+            </div>
+
+            {/* Transcript label */}
+            <div style={{ padding: '8px 20px 2px', fontSize: '10px', color: '#999', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.4px', fontFamily: FONT_BODY, flexShrink: 0 }}>
+              Transcript
+            </div>
+
+            {/* Textarea */}
+            <textarea value={selectedCall.transcript}
+              onChange={e => updateCall(selectedCall.id, { transcript: e.target.value })}
+              placeholder="Paste or type the call transcript here..."
+              style={{ flex: 1, padding: '8px 20px 20px', border: 'none', outline: 'none', resize: 'none', fontSize: '14px', lineHeight: '1.75', fontFamily: FONT_BODY, color: '#1A1A1A', background: '#fff' }} />
+          </div>
+
+          {/* Tasks panel */}
+          <div style={{ width: '300px', background: '#FAFAFA', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #E5E5E5', flexShrink: 0 }}>
+              <div style={{ fontSize: '10px', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600', fontFamily: FONT_BODY }}>
+                Action Items
+                {selectedCall.analyzedAt && <span style={{ marginLeft: '6px', color: '#22C55E' }}>✓ analyzed</span>}
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+              {/* Summary block */}
+              {selectedCall.summary && (
+                <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '10px', color: '#999', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '5px', fontFamily: FONT_BODY }}>Summary</div>
+                  <div style={{ fontSize: '12px', color: '#444', lineHeight: '1.6', fontFamily: FONT_BODY }}>{selectedCall.summary}</div>
+                </div>
+              )}
+
+              {/* Task list */}
+              {(selectedCall.tasks || []).length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px 12px', color: '#CCC', fontSize: '12px', lineHeight: '1.6', fontFamily: FONT_BODY }}>
+                  {selectedCall.transcript.trim()
+                    ? 'Click ✦ Analyze to extract tasks from the transcript'
+                    : 'Add a transcript, then click ✦ Analyze'}
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px', fontFamily: FONT_BODY }}>
+                    {(selectedCall.tasks).filter(t => t.done).length}/{(selectedCall.tasks).length} completed
+                  </div>
+                  {(selectedCall.tasks).map((task, idx) => (
+                    <div key={idx}
+                      onClick={() => updateCall(selectedCall.id, {
+                        tasks: selectedCall.tasks.map((t, i) => i === idx ? { ...t, done: !t.done } : t)
+                      })}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '8px 10px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: '8px', marginBottom: '5px', cursor: 'pointer', opacity: task.done ? 0.55 : 1 }}>
+                      <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${task.done ? '#22C55E' : '#CCC'}`, background: task.done ? '#22C55E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                        {task.done && <span style={{ color: '#fff', fontSize: '10px', fontWeight: '700' }}>✓</span>}
+                      </div>
+                      <span style={{ fontSize: '12px', lineHeight: '1.5', fontFamily: FONT_BODY, color: '#1A1A1A', textDecoration: task.done ? 'line-through' : 'none' }}>{task.text}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Manual task input */}
+              <AddTaskInput FONT_BODY={FONT_BODY}
+                onAdd={text => updateCall(selectedCall.id, {
+                  tasks: [...(selectedCall.tasks || []), { id: Date.now().toString(), text, done: false }]
+                })} />
+            </div>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Add Task Input ───────────────────────────────────────────────────────────
+function AddTaskInput({ onAdd, FONT_BODY }) {
+  const [text, setText] = useState('');
+  const submit = () => { if (text.trim()) { onAdd(text.trim()); setText(''); } };
+  return (
+    <div style={{ marginTop: '10px', display: 'flex', gap: '6px' }}>
+      <input value={text} onChange={e => setText(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && submit()}
+        placeholder="Add task manually..."
+        style={{ flex: 1, padding: '7px 10px', border: '1px solid #E5E5E5', borderRadius: '8px', fontSize: '12px', outline: 'none', fontFamily: FONT_BODY }} />
+      <button onClick={submit}
+        style={{ padding: '7px 10px', background: text.trim() ? '#1A1A1A' : '#E5E5E5', border: 'none', borderRadius: '8px', cursor: text.trim() ? 'pointer' : 'not-allowed', fontSize: '13px', color: '#fff', fontFamily: FONT_BODY }}>+</button>
     </div>
   );
 }
