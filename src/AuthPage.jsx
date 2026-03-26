@@ -144,17 +144,17 @@ export default function AuthPage({ onLogin }) {
       {/* ── Left panel ── */}
       <div style={{ width: '400px', flexShrink: 0, background: '#1A1A1A', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '56px 48px', color: '#fff' }}>
         <div>
-          <svg width="210" height="68" viewBox="0 0 210 68" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '12px', display: 'block' }}>
-            <rect x="0"  y="8"  width="14" height="14" rx="3" fill="white"/>
-            <rect x="19" y="8"  width="14" height="14" rx="3" fill="white" opacity="0.65"/>
-            <rect x="38" y="8"  width="14" height="14" rx="3" fill="white" opacity="0.35"/>
-            <rect x="0"  y="27" width="14" height="14" rx="3" fill="white" opacity="0.65"/>
-            <rect x="19" y="27" width="14" height="14" rx="3" fill="white" opacity="0.35"/>
-            <rect x="38" y="27" width="14" height="14" rx="3" fill="white" opacity="0.15"/>
-            <rect x="0"  y="46" width="14" height="14" rx="3" fill="white" opacity="0.35"/>
-            <rect x="19" y="46" width="14" height="14" rx="3" fill="white" opacity="0.15"/>
-            <rect x="38" y="46" width="14" height="14" rx="3" fill="white" opacity="0.06"/>
-            <text x="68" y="60" fontFamily="'Instrument Serif', Georgia, serif" fontSize="52" fontStyle="italic" fill="white" letterSpacing="-1">Flow</text>
+          <svg width="200" height="68" viewBox="0 0 200 68" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '12px', display: 'block' }}>
+            <rect x="0"  y="8"  width="10" height="10" rx="2" fill="white"/>
+            <rect x="14" y="8"  width="10" height="10" rx="2" fill="white" opacity="0.65"/>
+            <rect x="28" y="8"  width="10" height="10" rx="2" fill="white" opacity="0.35"/>
+            <rect x="0"  y="22" width="10" height="10" rx="2" fill="white" opacity="0.65"/>
+            <rect x="14" y="22" width="10" height="10" rx="2" fill="white" opacity="0.35"/>
+            <rect x="28" y="22" width="10" height="10" rx="2" fill="white" opacity="0.15"/>
+            <rect x="0"  y="36" width="10" height="10" rx="2" fill="white" opacity="0.35"/>
+            <rect x="14" y="36" width="10" height="10" rx="2" fill="white" opacity="0.15"/>
+            <rect x="28" y="36" width="10" height="10" rx="2" fill="white" opacity="0.06"/>
+            <text x="50" y="60" fontFamily="'Instrument Serif', Georgia, serif" fontSize="52" fontStyle="italic" fill="white" letterSpacing="-1">Flow</text>
           </svg>
           <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>Your Design Flow Partner</div>
         </div>
