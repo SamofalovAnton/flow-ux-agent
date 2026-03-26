@@ -775,7 +775,18 @@ Return ONLY valid JSON (no markdown fences):
         <div style={{ padding: '48px', maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
             <div>
-              <h1 style={{ fontSize: '56px', fontWeight: '400', marginBottom: '8px', letterSpacing: '-1px', fontFamily: FONT_DISPLAY, fontStyle: 'italic' }}>FLOW</h1>
+              <svg width="210" height="68" viewBox="0 0 210 68" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '8px', display: 'block' }}>
+                <rect x="0"  y="8"  width="14" height="14" rx="3" fill="#1A1A1A"/>
+                <rect x="19" y="8"  width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.65"/>
+                <rect x="38" y="8"  width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.35"/>
+                <rect x="0"  y="27" width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.65"/>
+                <rect x="19" y="27" width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.35"/>
+                <rect x="38" y="27" width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.15"/>
+                <rect x="0"  y="46" width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.35"/>
+                <rect x="19" y="46" width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.15"/>
+                <rect x="38" y="46" width="14" height="14" rx="3" fill="#1A1A1A" opacity="0.06"/>
+                <text x="68" y="60" fontFamily="'Instrument Serif', Georgia, serif" fontSize="52" fontStyle="italic" fill="#1A1A1A" letterSpacing="-1">Flow</text>
+              </svg>
               <p style={{ fontSize: '15px', color: '#666', fontFamily: FONT_BODY }}>Your Design Flow Partner</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
@@ -994,7 +1005,7 @@ Return ONLY valid JSON (no markdown fences):
           <button onClick={() => setView('projects')} style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#444' }}><Icon n="arrow_back" s={22} /></button>
           <div>
             <h1 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '1px' }}>{currentProject?.name}</h1>
-            <p style={{ fontSize: '11px', color: '#888' }}>FLOW · {(currentProject?.completedSteps || []).length}/9 steps</p>
+            <p style={{ fontSize: '11px', color: '#888' }}>Flow · {(currentProject?.completedSteps || []).length}/9 steps</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

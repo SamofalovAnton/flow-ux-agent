@@ -1,0 +1,22 @@
+<svg width="210" height="68" viewBox="0 0 210 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Diagonal grid: opacity = f(manhattan distance from top-left) -->
+  <!-- row 1 -->
+  <rect x="0"  y="8"  width="14" height="14" rx="3" fill="white"/>
+  <rect x="19" y="8"  width="14" height="14" rx="3" fill="white" opacity="0.65"/>
+  <rect x="38" y="8"  width="14" height="14" rx="3" fill="white" opacity="0.35"/>
+  <!-- row 2 -->
+  <rect x="0"  y="27" width="14" height="14" rx="3" fill="white" opacity="0.65"/>
+  <rect x="19" y="27" width="14" height="14" rx="3" fill="white" opacity="0.35"/>
+  <rect x="38" y="27" width="14" height="14" rx="3" fill="white" opacity="0.15"/>
+  <!-- row 3 -->
+  <rect x="0"  y="46" width="14" height="14" rx="3" fill="white" opacity="0.35"/>
+  <rect x="19" y="46" width="14" height="14" rx="3" fill="white" opacity="0.15"/>
+  <rect x="38" y="46" width="14" height="14" rx="3" fill="white" opacity="0.06"/>
+  <!-- wordmark -->
+  <text x="68" y="60"
+    font-family="'Instrument Serif', Georgia, serif"
+    font-size="52"
+    font-style="italic"
+    fill="white"
+    letter-spacing="-1">Flow</text>
+</svg>
